@@ -1240,8 +1240,12 @@
             
             if (performanceChart) {
                 performanceChart.options.scales.y.grid.color = gridColor;
-                performanceChart.options.scales.y.ticks = { ...(performanceChart.options.scales.y.ticks || {}), color: textColor };
-                performanceChart.options.scales.x.ticks = { ...(performanceChart.options.scales.x.ticks || {}), color: textColor };
+                if (performanceChart.options.scales.y.ticks) {
+                    performanceChart.options.scales.y.ticks.color = textColor;
+                }
+                if (performanceChart.options.scales.x.ticks) {
+                    performanceChart.options.scales.x.ticks.color = textColor;
+                }
                 performanceChart.update('none');
             }
             
