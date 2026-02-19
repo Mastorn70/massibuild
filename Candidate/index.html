@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pianificatore Scolastico v45</title>
+
+<style>
+:root { --primary: #2563eb; --bg: #f1f5f9; --card-bg: #ffffff; --border: #cbd5e1; --text: #1e293b; --radius: 6px; }
+:root.dark-mode { --primary: #3b82f6; --bg: #0f172a; --card-bg: #1e293b; --border: #334155; --text: #f1f5f9; }
+* { box-sizing: border-box; outline: none; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text); font-size: 13px; margin: 0; padding: 10px; transition: background-color 0.3s, color 0.3s; }
+.page-header { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.tabs-container { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 15px; flex-wrap: wrap; }
+.tab-button { padding: 10px 20px; background: transparent; border: none; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text); opacity: 0.6; border-bottom: 3px solid transparent; transition: all 0.3s; }
+.tab-button:hover { opacity: 0.8; }
+.tab-button.active { color: var(--primary); opacity: 1; border-bottom-color: var(--primary); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.main-wrapper { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+.column-left { flex: 1 1 350px; min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+.column-right { flex: 2 1 600px; min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+h3 { margin: 0 0 8px 0; font-size: 0.85rem; color: var(--primary); font-weight: 700; text-transform: uppercase; border-bottom: 2px solid var(--border); padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+h4 { margin: 10px 0 8px 0; font-size: 0.75rem; color: var(--primary); font-weight: 600; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; margin-bottom: 8px; }
+.col { flex: 1; min-width: 80px; }
+.col-wide { flex: 2; min-width: 120px; }
+.col-small { flex: 0 1 60px; min-width: 50px; }
+label { display: block; font-size: 10px; font-weight: 600; color: var(--text); margin-bottom: 1px; opacity: 0.8; }
+input, select { width: 100%; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; height: 28px; background: var(--card-bg); color: var(--text); }
+input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+button { height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 12px; white-space: nowrap; background: #e2e8f0; color: #334155; display: inline-flex; align-items: center; justify-content: center; transition: background-color 0.3s; }
+button:hover { background: #cbd5e1; }
+.btn-p { background: var(--primary); color: white; }
+.btn-p:hover { background: #1d4ed8; }
+.btn-g { background: #10b981; color: white; }
+.btn-g:hover { background: #059669; }
+.btn-r { background: #ef4444; color: white; }
+.btn-r:hover { background: #dc2626; }
+.btn-xs { height: 22px; padding: 0 6px; font-size: 10px; }
+.btn-dark { background: #475569; color: white; }
+.btn-dark:hover { background: #334155; }
+.table-responsive { width: 100%; overflow-x: auto; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); }
+table { width: 100%; border-collapse: collapse; min-width: 100%; }
+th { background: rgba(0,0,0,0.05); padding: 8px; text-align: left; font-size: 11px; font-weight: 700; border-bottom: 1px solid var(--border); }
+td { padding: 6px; border-bottom: 1px solid var(--border); font-size: 11px; vertical-align: top; }
+tr:hover { background: rgba(37,99,235,0.05); }
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+.modal.show { display: flex; align-items: center; justify-content: center; }
+.modal-content { background: var(--card-bg); padding: 20px; border-radius: 8px; width: 95%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+.modal-header h2 { font-size: 1.2rem; margin: 0; color: var(--primary); }
+.modal-close { font-size: 1.5rem; cursor: pointer; color: var(--text); opacity: 0.7; }
+.modal-close:hover { opacity: 1; color: #ef4444; }
+.rule-box { background: rgba(37,99,235,0.08); border: 1px solid var(--border); padding: 12px; border-radius: 4px; margin: 10px 0; }
+.rule-toggle { display: flex; align-items: center; gap: 8px; }
+.rule-toggle input[type="checkbox"] { width: auto; margin: 0; height: auto; }
+.rule-toggle label { margin: 0; cursor: pointer; font-weight: 600; font-size: 12px; }
+.rule-params { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 3px; margin-top: 8px; }
+.param-group { display: flex; flex-direction: column; }
+.param-group label { font-size: 11px; margin-bottom: 3px; }
+.param-group input { height: 24px; padding: 2px 4px; font-size: 11px; }
+.info-box { background: rgba(3,169,244,0.1); padding: 8px; border-radius: 4px; font-size: 11px; margin: 5px 0; color: var(--primary); border-left: 3px solid var(--primary); }
+.lab-badge { background: #7c3aed; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; display: inline-block; }
+.status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; margin-top: 8px; }
+.status-card { background: rgba(0,0,0,0.05); border: 1px solid var(--border); padding: 8px; border-radius: 3px; text-align: center; font-size: 11px; }
+.status-label { font-weight: 600; color: var(--primary); margin-bottom: 3px; font-size: 11px; }
+.status-value { font-size: 11px; font-weight: bold; color: #10b981; }
+.activity-item { background: rgba(37,99,235,0.1); border-left: 3px solid #2563eb; padding: 8px; margin: 5px 0; border-radius: 4px; }
+.edit-form { background: rgba(37,99,235,0.05); border: 1px solid var(--border); padding: 10px; border-radius: 4px; margin-top: 5px; }
+.edit-form input, .edit-form select { width: 100%; margin-bottom: 5px; }
+.modal-item { background: rgba(0,0,0,0.05); border: 1px solid var(--border); padding: 12px; border-radius: 4px; margin-bottom: 8px; }
+.checkbox-group { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.checkbox-group input[type="checkbox"] { width: 18px; height: 18px; margin: 0; }
+.checkbox-group label { margin: 0; font-size: 11px; }
+
+/* LIVE */
+.btn-live { background:#f97316; color:#fff; }
+.btn-live:hover { background:#ea580c; }
+.btn-live.active { background:#16a34a; }
+.btn-live.pulse { animation: livePulse 1s infinite; }
+.btn-live-switch { background:#0ea5e9; color:#fff; }
+.btn-live-switch:hover { background:#0284c7; }
+
+@keyframes livePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(22,163,74,0.6); }
+  70%  { box-shadow: 0 0 0 6px rgba(22,163,74,0); }
+  100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+}
+
+.live-status { font-size: 11px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); }
+.table-responsive { position: relative; overflow-y: auto; }
+.table-responsive table thead th { position: sticky; top: 0; z-index: 2; background: var(--card-bg); box-shadow: 0 1px 0 var(--border); }
+.planning-activity.waiting { background: rgba(245,158,11,0.15) !important; border-left-color: #f59e0b !important; }
+.planning-badge { display: inline-block; margin-left: 4px; padding: 1px 4px; border-radius: 3px; font-size: 11px; font-weight: 700; background: rgba(0,0,0,0.08); }
+.planning-badge.waiting { color: #f59e0b; }
+.planning-badge.locked { color: #ef4444; }
+.planning-badge.ok { color: #10b981; }
+
+/* Stile Excel per Matrice */
+table.matrix-excel { width: 100%; border-collapse: collapse; }
+table.matrix-excel th, table.matrix-excel td { border: 1px solid var(--border); padding: 6px; font-size: 14px; }
+table.matrix-excel thead th { background: var(--primary); color: #fff; border-color: #1e40af; }
+table.matrix-excel tbody tr:nth-child(even) { background: rgba(0,0,0,0.03); }
+
+/* Stampa solo Matrice */
+@media print {
+  body * { visibility: hidden; }
+  #matrixPrintArea, #matrixPrintArea * { visibility: visible; }
+  #matrixPrintArea { position: absolute; left: 0; top: 0; width: 100%; }
+  .page-header, .tabs-container { display: none !important; }
+}
+
+/* Planning top layout */
+.planning-top-row { display:flex; gap:10px; flex-wrap:wrap; }
+.planning-top-row .card { flex:1 1 320px; }
+
+/* Quick form collapse */
+.quick-form.collapsed .quick-form-body { display: none; }
+/* Sticky a sinistra per colonne Giorno/Ora (adattative al contenuto) */
+#planningTable, #labPlanningTable {
+  table-layout: auto; /* lascia che la larghezza segua il contenuto */
+  width: 100%;
+}
+
+/* Classi colonne: non fissiamo width, lasciamo auto ma con min-width se necessario */
+#planningTable th.col-day, #planningTable td.col-day,
+#labPlanningTable th.col-day, #labPlanningTable td.col-day {
+  min-width: 20px;
+  white-space: nowrap;
+  text-align: left; /* giustificate per il loro contenuto: left-align è solitamente migliore */
+  padding-left: 12px;
+}
+
+#planningTable th.col-time, #planningTable td.col-time,
+#labPlanningTable th.col-time, #labPlanningTable td.col-time {
+  min-width: 20px;
+  white-space: nowrap;
+  text-align: left;
+  padding-left: 12px;
+}
+/* Imposta larghezze fisse per le colonne Giorno e Ora */
+#planningTable th.col-day,
+#planningTable td.col-day,
+#labPlanningTable th.col-day,
+#labPlanningTable td.col-day {
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+  white-space: nowrap;
+}
+
+#planningTable th.col-time,
+#planningTable td.col-time,
+#labPlanningTable th.col-time,
+#labPlanningTable td.col-time {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+  white-space: nowrap;
+}
+/* Classe che abilita sticky left — left verrà impostato in-line con JS */
+#planningTable th.sticky-left, #planningTable td.sticky-left,
+#labPlanningTable th.sticky-left, #labPlanningTable td.sticky-left {
+  position: sticky;
+  left: 0; /* default, sovrascritto da JS dinamicamente se ci sono 2 colonne sticky */
+  z-index: 20;
+  background: var(--card-bg);
+  box-shadow: 2px 0 4px rgba(0,0,0,0.04);
+}
+
+/* stacking: la colonna più a sinistra (la prima visivamente) deve avere z-index maggiore.
+   Qui assumiamo col-day più a sinistra di col-time — se inverti modifica l'ordine nello JS */
+#planningTable th.col-day.sticky-left, #planningTable td.col-day.sticky-left,
+#labPlanningTable th.col-day.sticky-left, #labPlanningTable td.col-day.sticky-left {
+  z-index: 22;
+}
+#planningTable th.col-time.sticky-left, #planningTable td.col-time.sticky-left,
+#labPlanningTable th.col-time.sticky-left, #labPlanningTable td.col-time.sticky-left {
+  z-index: 21;
+}
+
+/* Assicura che il contenuto successivo non venga coperto */
+#planningTable td, #planningTable th { overflow: visible; }
+
+/* Se vuoi compattezza: */
+.planning-compact #planningTable td, .planning-compact #planningTable th {
+  padding: 6px 8px;
+  font-size: 12px;
+}
+/* Excel-like styling for planning tables / containers */
+
+:root{
+  --excel-bg: #0b1220;
+  --excel-header: #0f1724;
+  --excel-cell: rgba(255,255,255,0.02);
+  --excel-border: rgba(255,255,255,0.06);
+  --excel-text: #e6eef8;
+  --excel-muted: #9aa6b2;
+  --excel-accent: rgba(59,130,246,0.12);
+  --excel-accent-border: rgba(59,130,246,0.16);
+  --excel-selected: rgba(99,102,241,0.16);
+}
+
+/* Apply by adding class "excel-like" to the table or wrapper */
+.excel-like,
+.excel-like table {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: var(--excel-text);
+  background: var(--excel-bg);
+}
+
+/* Table base */
+.excel-like table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* consistent columns */
+  font-size: 13px;
+}
+
+/* Header */
+.excel-like thead th {
+  position: sticky;
+  top: 0;
+  background: linear-gradient(180deg, var(--excel-header), rgba(0,0,0,0.02));
+  color: var(--excel-text);
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--excel-border);
+  font-weight: 600;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.02);
+}
+
+/* Cells */
+.excel-like td {
+  padding: 8px 10px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--excel-border);
+  border-right: 1px solid rgba(255,255,255,0.02);
+  background: transparent;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Row zebra */
+.excel-like tbody tr:nth-child(odd) td {
+  background: rgba(255,255,255,0.007);
+}
+
+/* Hover */
+.excel-like tbody tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+/* Selected cell */
+.excel-like td.xl-selected {
+  outline: 2px solid var(--excel-selected);
+  background: var(--excel-selected);
+  z-index: 2;
+}
+
+/* Editing cell */
+.excel-like td.xl-editing {
+  background: rgba(99,102,241,0.08);
+  border-bottom: 1px dashed rgba(99,102,241,0.25);
+}
+
+/* Make inputs inside cells match style */
+.excel-like td input[type="text"], .excel-like td input[type="time"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.02);
+  color: var(--excel-text);
+}
+
+/* Sticky left columns if you used .col-day / .col-time + JS that sets left inline */
+.excel-like th.sticky-left, .excel-like td.sticky-left {
+  position: sticky;
+  left: 0;
+  z-index: 30;
+  background: var(--excel-header);
+  box-shadow: 2px 0 4px rgba(0,0,0,0.4);
+}
+
+/* compact mode */
+.planning-compact .excel-like td, .planning-compact .excel-like th {
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+/* small helpers for Tabulator cells (if used) */
+.tabulator .tabulator-cell.excel-like-cell {
+  padding: 6px 8px;
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+    <h1 style="margin:0; font-size:1.4rem; color:var(--primary); font-weight:800;">PIANIFICATORE <span style="font-weight:300; opacity:0.6;">PRO v45</span></h1>
+    <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+	<button id="btnOpenProfAvailability" class="btn-xs" onclick="openProfAvailabilityModal()">Verifica ore docenti</button>
+	<button class="btn-xs" onclick="openActivitiesGridModalEnhanced()">Vista Orizzontale Attività</button>
+	<button class="btn-xs" onclick="triggerImportClassExcel()">📥 Importa Excel/CSV Classi×Attività</button>
+	<button class="btn-xs" onclick="triggerImportProfExcel()">📥 Importa Excel/CSV lista professori</button>
+
+		<button onclick="resetMemory()" class="btn-xs">🧹 Azzera memoria</button>
+		<button onclick="exportJSON()" class="btn-xs">💾 Salva JSON</button>
+        <input type="file" id="jsonFileInput" accept=".json" style="display:none" onchange="importJSONFile()">
+        <button onclick="resetAssegnazioni()" class="btn-xs">♻️ Reset</button>
+        <button onclick="exportJSON()" class="btn-xs">⬇ JSON</button>
+        <button onclick="exportCSV()" class="btn-xs">⬇ CSV</button>
+		
+		<input id="profExcelInput" type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleProfExcelFile(event)">
+        <button id="liveButton" onclick="toggleLive()" class="btn-xs btn-live">🔴 LIVE</button>
+        <button id="liveSwitchButton" onclick="switchLiveFile()" class="btn-xs btn-live-switch" disabled>🔁 FILE</button>
+        <span id="liveStatus" class="live-status">LIVE: off</span>
+        <button onclick="toggleDarkMode()" class="btn-xs btn-dark">🌙 Dark</button>
+        <button onclick="run(true)" class="btn-g">▶ CALCOLA</button>
+    </div>
+</div>
+
+<div class="tabs-container">
+	<button class="tab-button active" onclick="switchTab('tab-planning')">📆 Planning</button>
+    <button class="tab-button" onclick="switchTab('tab-input')">📝 Inserimento Dati</button>
+    <button class="tab-button" onclick="switchTab('tab-classes')">📚 Creazione Moduli Classi - Attività</button>
+    <button class="tab-button" onclick="switchTab('tab-available')">📅 Disponibilità Docenti</button>    
+    <button class="tab-button" onclick="switchTab('tab-results')">📊 Statistiche</button>
+	<button class="tab-button" onclick="switchTab('tab-rules')">⚙️ Regole</button>
+</div>
+
+<!-- TAB 1: INPUT DATI -->
+<div id="tab-input" class="tab-content">
+    <div class="main-wrapper">
+        <div class="column-left">
+            <div class="card">
+                <h3>Laboratori <button class="btn-xs" onclick="openLabModal()">Gestisci</button></h3>
+                <div class="row">
+                    <div class="col-wide"><input id="labName" type="text" placeholder="Nome Lab..." /></div>
+                    <div class="col-small"><input id="labAlunni" type="number" min="0" value="15" placeholder="Alunni" /></div>
+                    <div style="flex:0 0 auto"><button class="btn-p" onclick="addLab()">+</button></div>
+                </div>
+            </div>
+			<div class="card">
+				<h3>Classi  - N. Alunni<button class="btn-xs" onclick="openClassiModal()">Gestisci</button></h3>
+				<div class="row">
+					<div class="col-wide"><input id="className" type="text" placeholder="Classe (es: 3A)" /></div>
+					<div class="col-small"><input id="classAlunni" type="number" min="1" value="15" placeholder="Alunni" /></div>
+					<div style="flex:0 0 auto"><button class="btn-p" onclick="addClass()">+</button></div>
+				</div>
+			</div>
+            <div class="card">
+                <h3>Professori <button class="btn-xs" onclick="openProfModal()">Gestisci</button></h3>
+                <div class="row">
+                    <div class="col-wide"><input id="pNome" type="text" placeholder="Nome" /></div>
+                    <div class="col-small"><input id="pMaxGiorno" type="number" value="6" /></div>
+                    <div class="col-small"><input id="pMaxWeek" type="number" value="18" /></div>
+                    <div style="flex:0 0 auto"><button class="btn-p" onclick="addProf()">+</button></div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Attività - Progetti <button class="btn-xs" onclick="openProjModal()">Gestisci</button></h3>
+                <div class="row">
+                    <div class="col-wide"><input id="prNome" type="text" placeholder="Nome Progetto" /></div>
+                </div>
+                <button class="btn-p" style="width:100%; margin-top:8px;" onclick="addProjComplete()">💾 Salva</button>
+            </div>
+        </div>
+        <div class="column-right">
+            <div class="card">
+                <h3>Riepilogo <button class="btn-xs" onclick="openSummaryModal()">Gestisci</button></h3>
+                <table style="font-size:10px;">
+                    <tr><td><strong>Laboratori:</strong></td><td id="repLabCount">0</td></tr>
+                    <tr><td><strong>Classi:</strong></td><td id="repClassCount">0</td></tr>
+                    <tr><td><strong>Professori:</strong></td><td id="repProfCount">0</td></tr>
+                    <tr><td><strong>Progetti:</strong></td><td id="repProjCount">0</td></tr>
+                    <tr><td><strong>Attività:</strong></td><td id="repActCount">0</td></tr>
+                    <tr><td><strong>Disponibilità:</strong></td><td id="repAvailCount">0</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="availabilityEditModal" class="modal" style="display:none;">
+  <div class="modal-content" style="max-width:520px;">
+    <div class="modal-header">
+      <h3 id="availabilityEditTitle">Modifica Disponibilità</h3>
+      <span class="modal-close" onclick="closeAvailabilityModal()">&times;</span>
+    </div>
+
+    <div style="padding:8px 0;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div>
+          <label>Giorno</label>
+          <input id="avGiorno" type="date" />
+        </div>
+        <div>
+          <label>Professore</label>
+          <select id="avProf"><option value="">-- Nessuno --</option></select>
+        </div>
+
+        <div>
+          <label>Ora Inizio</label>
+          <input id="avInizio" type="time" />
+        </div>
+        <div>
+          <label>Ora Fine</label>
+          <input id="avFine" type="time" />
+        </div>
+
+        <div style="grid-column:1/-1;">
+          <label>Laboratorio (opz.)</label>
+          <select id="avLab"><option value="">-- Nessuno --</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="btn-g" onclick="saveAvailabilityFromModal()">💾 Salva</button>
+      <button class="btn-xs" onclick="closeAvailabilityModal()">Annulla</button>
+      <div style="flex:1"></div>
+      <button class="btn-xs btn-r" id="avDeleteBtn" style="display:none;" onclick="deleteAvailabilityFromModal()">❌ Elimina</button>
+    </div>
+
+    <div id="avMsg" style="margin-top:8px; color:#374151; font-size:13px;"></div>
+  </div>
+</div>
+<div id="profAvailabilityModal" class="modal" style="display:none;">
+  <div id="profAvailabilityModalContent" class="modal-content" style="position:fixed; left:50px; top:50px; width:980px; max-width:calc(100% - 100px); z-index:99999; padding:10px;">
+    <div id="profAvailabilityHeader" style="cursor:move; display:flex; align-items:center; justify-content:space-between; user-select:none;">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <strong>Verifica ore libere docenti</strong>
+        <small id="profAvailabilitySubtitle" style="color:#9ca3af;"></small>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn-xs" onclick="profAvailabilityApplyAndClose()">Applica & Chiudi</button>
+        <button class="btn-xs" onclick="closeProfAvailabilityModal()">Chiudi</button>
+      </div>
+    </div>
+
+    <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;">
+        Docente:
+        <select id="profAvailabilitySelect" style="min-width:220px;">
+          <option value="">— Seleziona docente —</option>
+        </select>
+      </label>
+
+      <label style="display:flex;align-items:center;gap:6px;">
+        oppure multi:
+        <button class="btn-xs" onclick="profAvailabilityToggleMulti()">Multi</button>
+      </label>
+		<!-- Inserire nel modal esistente, nella riga dei controlli (dopo il select docente) -->
+<label style="display:flex;align-items:center;gap:6px;">
+  Lab:
+  <select id="profAvailabilityLabFilter" style="min-width:160px; margin-left:6px;">
+    <option value="">— Tutti lab —</option>
+  </select>
+</label>
+
+<label style="display:flex;align-items:center;gap:6px;">
+  Materia:
+  <select id="profAvailabilityMateriaFilter" style="min-width:160px; margin-left:6px;">
+    <option value="">— Tutte le materie —</option>
+  </select>
+</label>
+      <label style="display:flex;align-items:center;gap:6px;">
+        Data inizio:
+        <input id="profAvailabilityStart" type="date" style="margin-left:6px;">
+      </label>
+
+      <label style="display:flex;align-items:center;gap:6px;">
+        Giorni:
+        <input id="profAvailabilityDays" type="number" min="1" max="14" value="5" style="width:66px; margin-left:6px;">
+      </label>
+
+      <label style="display:flex;align-items:center;gap:6px;">
+        Orario:
+        <input id="profAvailabilityFrom" type="time" value="08:00" style="margin-left:6px;">
+        <span>→</span>
+        <input id="profAvailabilityTo" type="time" value="17:00">
+      </label>
+
+      <label style="display:flex;align-items:center;gap:6px;">
+        Slot (min):
+        <input id="profAvailabilitySlotMin" type="number" min="15" max="180" value="60" style="width:70px;">
+      </label>
+
+      <button class="btn-xs" onclick="renderProfAvailabilityGrid()">Mostra</button>
+      <div style="flex:1"></div>
+      <button class="btn-xs" onclick="profAvailabilityExportCSV()">Esporta CSV</button>
+      <button class="btn-xs" onclick="profAvailabilityExportXLSX()">Esporta XLSX</button>
+    </div>
+
+    <div id="profAvailabilityContainer" style="margin-top:10px; max-height:60vh; overflow:auto; border:1px solid var(--border); background:var(--card-bg); padding:6px;">
+      <!-- griglia verrà renderizzata qui -->
+    </div>
+
+    <div style="margin-top:8px; color:#6b7280; font-size:13px;">
+      Note: il modal è spostabile trascinando l'intestazione. Clic esterno non lo chiude; chiudi con il pulsante o con closeProfAvailabilityModal().
+    </div>
+  </div>
+</div>
+<!-- IMPORT CLASSI × ATTIVITÀ — aggiungi questo snippet nel tab Input, per esempio sotto il blocco "Classi" -->
+<div style="margin-top:8px;">
+  <input id="classExcelInput" type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleClassExcelFile(event)">
+  
+</div>
+<div id="profAvailabilityModal" class="modal" style="display:none;">
+  <div id="profAvailabilityModalContent" class="modal-content" style="position:fixed; left:50px; top:50px; width:980px; max-width:calc(100% - 100px); z-index:99999; padding:10px;">
+    <div id="profAvailabilityHeader" style="cursor:move; display:flex; align-items:center; justify-content:space-between; user-select:none;">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <strong>Verifica ore libere docenti</strong>
+        <small id="profAvailabilitySubtitle" style="color:#9ca3af;"></small>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn-xs" onclick="profAvailabilityApplyAndClose()">Applica & Chiudi</button>
+        <button class="btn-xs" onclick="closeProfAvailabilityModal()">Chiudi</button>
+      </div>
+    </div>
+
+    <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;">
+        Docente:
+        <select id="profAvailabilitySelect" style="min-width:220px;">
+          <option value="">— Seleziona docente —</option>
+        </select>
+      </label>
+
+      <label style="display:flex;align-items:center;gap:6px;">
+        oppure multi:
+        <button class="btn-xs" onclick="profAvailabilityToggleMulti()">Multi</button>
+      </label>
+
+      <label style="display:flex;align-items:center;gap:6px;">
+        Data inizio:
+        <input id="profAvailabilityStart" type="date" style="margin-left:6px;">
+      </label>
+
+      <label style="display:flex;align-items:center;gap:6px;">
+        Giorni:
+        <input id="profAvailabilityDays" type="number" min="1" max="14" value="5" style="width:66px; margin-left:6px;">
+      </label>
+
+      <label style="display:flex;align-items:center;gap:6px;">
+        Orario:
+        <input id="profAvailabilityFrom" type="time" value="08:00" style="margin-left:6px;">
+        <span>→</span>
+        <input id="profAvailabilityTo" type="time" value="17:00">
+      </label>
+
+      <label style="display:flex;align-items:center;gap:6px;">
+        Slot (min):
+        <input id="profAvailabilitySlotMin" type="number" min="15" max="180" value="60" style="width:70px;">
+      </label>
+
+      <button class="btn-xs" onclick="renderProfAvailabilityGrid()">Mostra</button>
+      <div style="flex:1"></div>
+      <button class="btn-xs" onclick="profAvailabilityExportCSV()">Esporta CSV</button>
+      <button class="btn-xs" onclick="profAvailabilityExportXLSX()">Esporta XLSX</button>
+    </div>
+
+    <div id="profAvailabilityContainer" style="margin-top:10px; max-height:60vh; overflow:auto; border:1px solid var(--border); background:var(--card-bg); padding:6px;">
+      <!-- griglia verrà renderizzata qui -->
+    </div>
+
+    <div style="margin-top:8px; color:#6b7280; font-size:13px;">
+      Note: il modal è spostabile trascinando l'intestazione. Clic esterno non lo chiude; chiudi con il pulsante o con closeProfAvailabilityModal().
+    </div>
+  </div>
+</div>
+<div id="activitiesGridModalEnhanced" class="modal" style="display:none;">
+  <div class="modal-content" style="max-width:1200px; width:98%; padding:10px;">
+    <div class="modal-header" style="display:flex; align-items:center; justify-content:space-between;">
+      <h2 style="margin:0;">Vista Orizzontale Attività × Giorni — Editing avanzato</h2>
+      <div>
+        <button class="btn-xs" onclick="closeActivitiesGridModalEnhanced()">Chiudi</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; align-items:center; margin:8px 0;">
+      <label>Classe:
+        <select id="activitiesGridClassFilterEnhanced" style="margin-left:6px;">
+          <option value="">— Tutte —</option>
+        </select>
+      </label>
+
+      <label>Data inizio:
+        <input id="activitiesGridStartDateEnhanced" type="date" style="margin-left:6px;">
+      </label>
+
+      <label>Giorni:
+        <input id="activitiesGridDaysEnhanced" type="number" min="1" max="14" value="5" style="width:60px; margin-left:6px;">
+      </label>
+
+      <button class="btn-xs" onclick="activitiesGridRenderEnhanced()">Mostra</button>
+
+      <div style="flex:1"></div>
+
+      <button class="btn-g" onclick="activitiesGridApplyChangesEnhanced()">Salva modifiche</button>
+      <button class="btn-xs" onclick="activitiesGridExportCSV()">Esporta CSV</button>
+      <button class="btn-xs" onclick="activitiesGridExportXLSX()">Esporta XLSX</button>
+    </div>
+
+    <div id="activitiesGridContainerEnhanced" style="max-height:62vh; overflow:auto; border:1px solid var(--border); background:var(--card-bg);">
+      <!-- Tabella dinamica verrà inserita qui -->
+    </div>
+
+    <!-- Editing form (hidden, shown when editing a specific activity) -->
+    <div id="activitiesGridEditForm" style="display:none; margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
+      <h3>Modifica attività</h3>
+      <form id="activitiesGridEditFormBody" onsubmit="return false;">
+        <input type="hidden" id="edit_idx">
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <label>Classe: <input id="edit_classe" type="text" readonly></label>
+          <label>Attività: <input id="edit_nome" type="text" readonly></label>
+          <label>Giorno: <input id="edit_giorno" type="date"></label>
+          <label>Inizio: <input id="edit_inizio" type="time"></label>
+          <label>Fine: <input id="edit_fine" type="time"></label>
+          <label>Prof1: <input id="edit_prof1" type="text"></label>
+          <label>Prof2: <input id="edit_prof2" type="text"></label>
+          <label>Lab: <input id="edit_lab" type="text"></label>
+        </div>
+        <div style="margin-top:8px;">
+          <button class="btn-g" onclick="saveEditFormEnhanced()">Salva</button>
+          <button class="btn-xs" onclick="cancelEditFormEnhanced()">Annulla</button>
+          <span id="editFormValidation" style="margin-left:12px;color:#e11d48"></span>
+        </div>
+      </form>
+    </div>
+
+    <div style="margin-top:8px; color:#6b7280;">
+      Drag & drop per spostare attività tra colonne. Le modifiche sono accumulate localmente e salvate con "Salva modifiche". Le convalide R1/R2/R10 vengono eseguite prima del salvataggio.
+    </div>
+  </div>
+</div>
+<!-- Modal: Anteprima import Classi/Attività -->
+<div id="classImportModal" class="modal" style="display:none;">
+  <div class="modal-content" style="max-width:900px;">
+    <div class="modal-header">
+      <h2>Anteprima import Classi × Attività</h2>
+      <span class="modal-close" onclick="closeClassImportModal()">&times;</span>
+    </div>
+
+    <div style="margin-bottom:8px;">
+      <small style="color:#374151">Rivedi le righe, modifica se necessario e seleziona le righe da importare. Duplicati e righe non valide verranno segnalate.</small>
+    </div>
+
+    <div style="max-height:60vh; overflow:auto; border:1px solid var(--border); padding:6px; border-radius:6px; background:var(--card-bg);">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="width:36px; text-align:center;">✔</th>
+            <th style="min-width:160px">Classe</th>
+            <th style="min-width:160px">Attività</th>
+            <th style="min-width:140px">Laboratorio</th>
+            <th style="min-width:120px">Giorno</th>
+            <th style="min-width:100px">Inizio</th>
+            <th style="min-width:100px">Fine</th>
+            <th style="min-width:80px">Alunni</th>
+            <th style="min-width:140px">Prof1 / Prof2</th>
+            <th style="min-width:120px">Status</th>
+          </tr>
+        </thead>
+        <tbody id="classImportTableBody"></tbody>
+      </table>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button id="importClassBtn" class="btn-g">✅ Importa selezionati</button>
+      <button id="cancelClassImportBtn" class="btn-xs" onclick="closeClassImportModal()">Annulla</button>
+      <div style="flex:1"></div>
+      <small id="classImportSummary" style="align-self:center; color:#374151"></small>
+    </div>
+  </div>
+</div>
+<!-- TAB 2: PROGRAMMAZIONE CLASSI -->
+<div id="tab-classes" class="tab-content">
+    <div class="main-wrapper">
+        <div class="column-left">
+            <div class="card">
+                <h3>Seleziona Classe</h3>
+                <select id="classSelectForProg" onchange="loadClassActivities()" style="width:100%; height:32px;">
+                    <option value="">-- Scegli Classe --</option>
+                </select>
+            </div>
+            <div class="card">
+                <h3>Aggiungi Attività</h3>
+                <div class="row">
+                    <div class="col-wide"><label style="font-size:9px;">Attività</label>
+                        <select id="actName"><option value="">-- Seleziona --</option></select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col"><label style="font-size:9px;">Giorno</label><input id="actGiorno" type="date" /></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label style="font-size:9px;">Dalle</label><input id="actOraInizio" type="time" placeholder="Default" /></div>
+                    <div class="col"><label style="font-size:9px;">Alle</label><input id="actOraFine" type="time" placeholder="Default" /></div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label style="font-size:9px;">Docente 1 (lock)</label>
+                        <select id="actProf1"></select>
+                    </div>
+                    <div class="col">
+                        <label style="font-size:9px;">Docente 2 (lock)</label>
+                        <select id="actProf2"></select>
+                    </div>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="actAllowOverlap">
+                    <label for="actAllowOverlap">Consenso sovrapposizioni (Lab/Attività)</label>
+                </div>
+                <button class="btn-p" style="width:100%; margin-top:8px;" onclick="addActivityToClass()">➕ Aggiungi</button>
+            </div>
+        </div>
+        <div class="column-right">
+            <div class="card">
+                <h3 id="classActivitiesTitle">Attività</h3>
+                <div id="classActivitiesContainer" style="min-height:300px;">
+                    <p style="opacity:0.5; text-align:center; padding:20px;">Seleziona una classe</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 3: DISPONIBILITÀ -->
+<div id="tab-available" class="tab-content">
+    <div class="card">
+        <h3>Disponibilità Docenti</h3>
+        <div style="margin-bottom:15px;">
+            <h4>➕ Aggiungi Disponibilità</h4>
+            <div class="row">
+                <div class="col"><label style="font-size:9px;">Dal</label><input id="dGiornoStart" type="date" /></div>
+                <div class="col"><label style="font-size:9px;">Al</label><input id="dGiornoEnd" type="date" /></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap:6px; padding:6px; background:rgba(0,0,0,0.04); border-radius:4px; margin-bottom:8px;">
+                <div class="checkbox-group"><input type="checkbox" id="dDayMon" checked><label for="dDayMon">Lun</label></div>
+                <div class="checkbox-group"><input type="checkbox" id="dDayTue" checked><label for="dDayTue">Mar</label></div>
+                <div class="checkbox-group"><input type="checkbox" id="dDayWed" checked><label for="dDayWed">Mer</label></div>
+                <div class="checkbox-group"><input type="checkbox" id="dDayThu" checked><label for="dDayThu">Gio</label></div>
+                <div class="checkbox-group"><input type="checkbox" id="dDayFri" checked><label for="dDayFri">Ven</label></div>
+                <div class="checkbox-group"><input type="checkbox" id="dDaySat"><label for="dDaySat">Sab</label></div>
+                <div class="checkbox-group"><input type="checkbox" id="dDaySun"><label for="dDaySun">Dom</label></div>
+            </div>
+
+            <div class="row">
+                <div class="col"><label style="font-size:9px;">Dalle</label><input id="dOraInizio" type="time" /></div>
+                <div class="col"><label style="font-size:9px;">Alle</label><input id="dOraFine" type="time" /></div>
+            </div>
+            <div class="row">
+                <div class="col-wide"><label style="font-size:9px;">Docente</label><select id="dProf" onchange="autoSelectLabForProf()"><option value="">Seleziona...</option></select></div>
+            </div>
+            <div class="row">
+                <div class="col-wide"><label style="font-size:9px;">Lab (Opz.)</label><select id="dLab"><option value="">-- Nessuno --</option></select></div>
+            </div>
+            <button class="btn-g" style="width:100%;" onclick="addDaySlot()">✅ Aggiungi</button>
+        </div>
+        <h4>📋 Elenco</h4>
+        <input id="availSearch" type="text" placeholder="Cerca disponibilità..." style="width:100%; margin:6px 0 10px;" oninput="setAvailabilityFilter(this.value)">
+        <div class="table-responsive" style="max-height:400px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="setAvailabilitySort('giorno')" style="font-size:12px;">Giorno</th>
+                        <th onclick="setAvailabilitySort('professore')">Professore</th>
+                        <th onclick="setAvailabilitySort('oraInizio')">Dalle</th>
+                        <th onclick="setAvailabilitySort('oraFine')">Alle</th>
+                        <th onclick="setAvailabilitySort('laboratorio')">Lab</th>
+                        <th>Disponibili</th>
+                        <th>Occupate</th>
+                        <th>Saldo</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="tblDaysAvailable"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 4: REGOLE -->
+<div id="tab-rules" class="tab-content">
+    <div class="main-wrapper">
+        <div class="column-left">
+            <div class="card">
+                <h3>⚙️ Regole</h3>
+                <div class="rule-box">
+                    <div class="rule-toggle">
+                        <input type="checkbox" id="rule1Enable" checked onchange="updateRulesDisplay()">
+                        <label for="rule1Enable">1️⃣ Ore/Giorno</label>
+                    </div>
+                    <div class="rule-params">
+                        <div class="param-group"><label>Default</label><input type="number" id="rule1Value" value="6" onchange="updateRulesDisplay()"></div>
+                        <div class="param-group"><label>Min</label><input type="number" id="rule1Min" value="1" onchange="updateRulesDisplay()"></div>
+                        <div class="param-group"><label>Max</label><input type="number" id="rule1Max" value="12" onchange="updateRulesDisplay()"></div>
+                    </div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-toggle">
+                        <input type="checkbox" id="rule2Enable" checked onchange="updateRulesDisplay()">
+                        <label for="rule2Enable">2️⃣ Ore/Settimana</label>
+                    </div>
+                    <div class="rule-params">
+                        <div class="param-group"><label>Default</label><input type="number" id="rule2Value" value="18" onchange="updateRulesDisplay()"></div>
+                        <div class="param-group"><label>Min</label><input type="number" id="rule2Min" value="5" onchange="updateRulesDisplay()"></div>
+                        <div class="param-group"><label>Max</label><input type="number" id="rule2Max" value="40" onchange="updateRulesDisplay()"></div>
+                    </div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-toggle">
+                        <input type="checkbox" id="rule3Enable" checked onchange="updateRulesDisplay()">
+                        <label for="rule3Enable">3️⃣ Lab Ore/Giorno</label>
+                    </div>
+                    <div class="rule-params">
+                        <div class="param-group"><label>Default</label><input type="number" id="rule3Value" value="2" onchange="updateRulesDisplay()"></div>
+                        <div class="param-group"><label>Min</label><input type="number" id="rule3Min" value="1" onchange="updateRulesDisplay()"></div>
+                        <div class="param-group"><label>Max</label><input type="number" id="rule3Max" value="8" onchange="updateRulesDisplay()"></div>
+                    </div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-toggle">
+                        <input type="checkbox" id="rule4Enable" checked onchange="updateRulesDisplay()">
+                        <label for="rule4Enable">4️⃣ No Conflitti</label>
+                    </div>
+                    <div class="rule-params">
+                        <div class="param-group"><label>Tolleranza (min)</label><input type="number" id="rule4Value" value="0" onchange="updateRulesDisplay()"></div>
+                    </div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-toggle">
+                        <input type="checkbox" id="rule5Enable" checked onchange="updateRulesDisplay()">
+                        <label for="rule5Enable">5️⃣ Bilanciamento</label>
+                    </div>
+                    <div class="rule-params">
+                        <div class="param-group"><label>Soglia (%)</label><input type="number" id="rule5Value" value="20" onchange="updateRulesDisplay()"></div>
+                    </div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-toggle">
+                        <input type="checkbox" id="rule6Enable" checked onchange="updateRulesDisplay()">
+                        <label for="rule6Enable">6️⃣ Owner Obbl</label>
+                    </div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-toggle">
+                        <input type="checkbox" id="rule7Enable" checked onchange="updateRulesDisplay()">
+                        <label for="rule7Enable">7️⃣ Doppio Prof</label>
+                    </div>
+                    <div class="rule-params">
+                        <div class="param-group"><label>Alunni</label><input type="number" id="rule7Value" value="15" onchange="updateRulesDisplay()"></div>
+                    </div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-toggle">
+                        <input type="checkbox" id="rule8Enable" checked onchange="updateRulesDisplay()">
+                        <label for="rule8Enable">8️⃣ Giorni Planning</label>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap:6px; padding:8px; background:rgba(0,0,0,0.05); border-radius:3px; margin-top:8px;">
+                        <div class="checkbox-group"><input type="checkbox" id="rule8Mon" checked onchange="updateRulesDisplay()"><label for="rule8Mon">Lunedì</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="rule8Tue" checked onchange="updateRulesDisplay()"><label for="rule8Tue">Martedì</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="rule8Wed" checked onchange="updateRulesDisplay()"><label for="rule8Wed">Mercoledì</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="rule8Thu" checked onchange="updateRulesDisplay()"><label for="rule8Thu">Giovedì</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="rule8Fri" checked onchange="updateRulesDisplay()"><label for="rule8Fri">Venerdì</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="rule8Sat" onchange="updateRulesDisplay()"><label for="rule8Sat">Sabato</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="rule8Sun" onchange="updateRulesDisplay()"><label for="rule8Sun">Domenica</label></div>
+                    </div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-toggle">
+                        <input type="checkbox" id="rule9Enable" checked onchange="updateRulesDisplay()">
+                        <label for="rule9Enable">9️⃣ Orari Default</label>
+                    </div>
+                    <div class="rule-params">
+                        <div class="param-group"><label>Inizio</label><input type="time" id="rule9Start" value="08:00" onchange="updateRulesDisplay()"></div>
+                        <div class="param-group"><label>Fine</label><input type="time" id="rule9End" value="14:00" onchange="updateRulesDisplay()"></div>
+                    </div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-toggle">
+                        <input type="checkbox" id="rule10Enable" onchange="updateRulesDisplay()">
+                        <label for="rule10Enable">🔟 Ore Consecutive</label>
+                    </div>
+                    <div class="rule-params">
+                        <div class="param-group">
+                            <label>Ore min</label>
+                            <select id="rule10Value" onchange="updateRulesDisplay()>
+                                <option value="2">1 ore</option>
+								<option value="2">2 ore</option>
+								<option value="2">3 ore</option>
+                                <option value="4">4 ore</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top:15px; display:flex; gap:5px;">
+                    <button class="btn-g btn-xs" onclick="saveRulesConfig()" style="flex:1;">💾 Salva</button>
+                    <button class="btn-xs" onclick="resetRulesConfig()" style="flex:1;">🔄 Reset</button>
+                </div>
+            </div>
+        </div>
+        <div class="column-right">
+            <div class="card">
+                <h3>📊 Riepilogo</h3>
+                <div class="status-grid">
+                    <div class="status-card"><div class="status-label">R1</div><div class="status-value" id="statusRule1">6h</div></div>
+                    <div class="status-card"><div class="status-label">R2</div><div class="status-value" id="statusRule2">18h</div></div>
+                    <div class="status-card"><div class="status-label">R3</div><div class="status-value" id="statusRule3">2h</div></div>
+                    <div class="status-card"><div class="status-label">R4</div><div class="status-value" id="statusRule4">0'</div></div>
+                    <div class="status-card"><div class="status-label">R5</div><div class="status-value" id="statusRule5">20%</div></div>
+                    <div class="status-card"><div class="status-label">R6</div><div class="status-value" id="statusRule6">✅</div></div>
+                    <div class="status-card"><div class="status-label">R7</div><div class="status-value" id="statusRule7">15👥</div></div>
+                    <div class="status-card"><div class="status-label">R8</div><div class="status-value" id="statusRule8">5gg</div></div>
+                    <div class="status-card"><div class="status-label">R9</div><div class="status-value" id="statusRule9">08-14</div></div>
+                    <div class="status-card"><div class="status-label">R10</div><div class="status-value" id="statusRule10">❌</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 5: RISULTATI -->
+<div id="tab-results" class="tab-content">
+    <div class="card">
+        <h3>Matrice Professori × Attività</h3>
+        <div class="row">
+            <div class="col-wide">
+                <input id="matrixSearch" type="text" placeholder="Cerca nella matrice..." style="width:100%; margin:6px 0 10px;" oninput="setMatrixFilter(this.value)">
+            </div>
+            <div style="flex:0 0 auto; display:flex; gap:6px; margin:6px 0 10px;">
+                <button class="btn-xs" onclick="exportMatrixCSV()">⬇ CSV Matrice</button>
+                <button class="btn-xs" onclick="printMatrix()">🖨️ PDF</button>
+            </div>
+        </div>
+        <div id="matrixPrintArea">
+            <div class="table-responsive" style="max-height:800px;">
+                <table id="matrixTable" class="matrix-excel">
+                    <thead id="matrixHead"></thead>
+                    <tbody id="matrixBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 6: PLANNING -->
+<div id="tab-planning" class="tab-content active">
+    <div class="planning-top-row">
+        <div class="card">
+            <h3>⚠️ Avvisi</h3>
+            <ul id="warningsList" style="padding-left:15px; margin:0; font-size:11px; opacity:0.8; max-height:180px; overflow-y:auto;">
+                <li>Sistema pronto.</li>
+            </ul>
+        </div>
+
+        <div class="card quick-form" id="quickFormCard">
+            <h3>➕ Aggiungi attività veloce
+                <button class="btn-xs" onclick="toggleQuickForm()">▾</button>
+            </h3>
+
+            <div class="quick-form-body">
+                <div class="row">
+                    <div class="col">
+                        <label>Classe</label>
+                        <select id="quickClassSelect" onchange="syncQuickAlunniFromClass()"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-wide">
+                        <label>Nuova classe (opz.)</label>
+                        <input id="quickNewClass" type="text" placeholder="es. 3A" />
+                    </div>
+                    <div style="flex:0 0 auto">
+                        <button class="btn-xs btn-p" onclick="quickAddClass()">+ Classe</button>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>Alunni</label>
+                        <input id="quickAlunni" type="number" min="0" placeholder="Numero alunni" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-wide">
+                        <label>Attività</label>
+                        <select id="quickActivitySelect"></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col"><label>Giorno</label><input id="quickDay" type="date"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col"><label>Dalle</label><input id="quickStart" type="time"></div>
+                    <div class="col"><label>Alle</label><input id="quickEnd" type="time"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>Docente 1 (lock)</label>
+                        <select id="quickProf1"></select>
+                    </div>
+                    <div class="col">
+                        <label>Docente 2 (lock)</label>
+                        <select id="quickProf2"></select>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="quickAllowOverlap">
+                    <label for="quickAllowOverlap">Consenso sovrapposizioni (Lab/Attività)</label>
+                </div>
+
+                <button class="btn-g" style="width:100%; margin-top:6px;" onclick="quickAddActivity()">✅ Aggiungi</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Planning Settimanale</h3>
+        <div style="margin-bottom:15px;">
+            <div class="row">
+                <div class="col"><label style="font-size:9px;">Data Inizio</label><input id="planningWeekStart" type="date" style="max-width:600px;"/></div>
+                <div class="col-small"><button class="btn-p" onclick="generatePlanningView()" style="width:110%;">🔄 Genera</button></div>
+				<div class="row" style="align-items:center;">
+					<label style="font-size:9px; display:flex; align-items:center; gap:6px;"> <input type="checkbox" id="planningShowPending" onchange="togglePlanningPending(this.checked)">Solo in attesa</label>
+				</div>
+            </div>
+        </div>
+        <div class="table-responsive" style="max-height:800px;">
+            <table id="planningTable" class="excel-like" ></table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Matrice Lab × Attività</h3>
+        <div style="margin-bottom:15px;">
+            <div class="row">
+                <div class="col"><label style="font-size:9px;">Data Inizio</label><input id="labPlanningWeekStart" type="date" style="max-width:600px;" /></div>
+                <div class="col-small"><button class="btn-p" onclick="generateLabPlanningView()" style="width:110%;">🔄 Genera</button></div>
+            </div>
+        </div>
+        <div class="table-responsive" style="max-height:800px;">
+            <table id="labPlanningTable" style="font-size:12px; border-collapse:collapse; width:100%;"></table>
+        </div>
+    </div>
+</div>
+
+<!-- MODALI -->
+<div id="planningProfModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Modifica Docente</h2>
+      <span class="modal-close" onclick="closePlanningSwapModal()">&times;</span>
+    </div>
+    <div id="planningSwapInfo" style="font-size:12px; margin-bottom:10px;"></div>
+    <div class="row">
+        <div class="col">
+            <label style="font-size:12px;">Docente 1</label>
+            <select id="planningProfSelect" style="width:100%; margin-bottom:10px;"></select>
+        </div>
+        <div class="col" id="planningProfSelect2Row" style="display:none;">
+            <label style="font-size:12px;">Docente 2</label>
+            <select id="planningProfSelect2" style="width:100%; margin-bottom:10px;"></select>
+        </div>
+    </div>
+    <div style="display:flex; gap:6px;">
+      <button class="btn-g btn-xs" onclick="applyPlanningProfSwap()" style="flex:1;">✅ Applica</button>
+      <button class="btn-xs" onclick="closePlanningSwapModal()" style="flex:1;">Annulla</button>
+	  <!-- dentro planningProfModal, dove ci sono i pulsanti -->
+		<button class="btn-xs" id="planningProfUnlockBtn" onclick="unlockPlanningActivity()">Sblocca</button>
+    </div>
+  </div>
+</div>
+<div id="labModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2>Gestione Laboratori</h2><span class="modal-close" onclick="closeLabModal()">&times;</span></div>
+        <div id="labModalBody"></div>
+    </div>
+</div>
+
+<div id="classiModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2>Gestione Classi</h2><span class="modal-close" onclick="closeClassiModal()"value="15">&times;</span></div>
+        <div id="classiModalBody"></div>
+    </div>
+</div>
+
+<div id="profModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2>Gestione Professori</h2><span class="modal-close" onclick="closeProfModal()">&times;</span></div>
+        <div id="profModalBody"></div>
+    </div>
+</div>
+
+<div id="projModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2>Gestione Progetti</h2><span class="modal-close" onclick="closeProjModal()">&times;</span></div>
+        <div id="projModalBody"></div>
+    </div>
+</div>
+
+<!-- Modal: Anteprima import professori da Excel -->
+<div id="profImportModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Anteprima import professori</h2>
+      <span class="modal-close" onclick="closeProfImportModal()">&times;</span>
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <small style="color:#374151">Rivedi i nomi, modifica se necessario e seleziona le righe da importare. I duplicati verranno saltati automaticamente.</small>
+    </div>
+
+    <div style="max-height:60vh; overflow:auto; border:1px solid var(--border); padding:6px; border-radius:6px;">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="width:36px; text-align:center;">✔</th>
+            <th style="min-width:200px">Nome risultante (modificabile)</th>
+            <th style="min-width:240px">Valori originali (anteprima)</th>
+            <th style="width:120px; text-align:center">Status</th>
+          </tr>
+        </thead>
+        <tbody id="profImportTableBody"></tbody>
+      </table>
+    </div>
+
+<!-- all'interno del modal profImportModal, sostituisci i pulsanti con questi -->
+<div style="display:flex; gap:8px; margin-top:12px;">
+  <button id="importProfBtn" class="btn-g">✅ Importa selezionati</button>
+  <button id="cancelProfImportBtn" class="btn-xs">Annulla</button>
+  <div style="flex:1"></div>
+  <small id="profImportSummary" style="align-self:center; color:#374151"></small>
+</div>
+  </div>
+</div>
+<div id="summaryModal" class="modal">
+  <div class="modal-content" style="max-width:900px;">
+    <div class="modal-header">
+      <h2>Riepilogo — Gestione elementi</h2>
+      <span class="modal-close" onclick="closeSummaryModal()">&times;</span>
+    </div>
+
+    <div style="margin-bottom:8px;">
+      <small style="color:#374151">Clicca sul nome per aprire il form di modifica. Salva per applicare le modifiche.</small>
+    </div>
+
+    <div id="summaryModalBody" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; max-height:60vh; overflow:auto; padding-bottom:6px;">
+      <!-- Contenuto popolato da JS: sezioni per laboratori, classi, professori, progetti, disponibilita -->
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:12px; align-items:center;">
+      <button class="btn-g" onclick="saveAllSummaryChanges()">💾 Salva tutto</button>
+      <button class="btn-xs" onclick="closeSummaryModal()">Annulla</button>
+      <div style="flex:1"></div>
+      <small id="summaryModalMsg" style="color:#374151"></small>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="parte2.js"></script>
+<script src="parte3.js"></script>
+
+<script>
+  // Avvio sul tab Planning: genera le viste se le funzioni sono disponibili.
+  // Protezione con typeof + try/catch per evitare errori se qualcosa manca.
+  if (typeof generatePlanningView === 'function') {
+      try { generatePlanningView(); } catch (e) { console.warn('generatePlanningView error:', e); }
+  }
+  if (typeof generateLabPlanningView === 'function') {
+      try { generateLabPlanningView(); } catch (e) { console.warn('generateLabPlanningView error:', e); }
+  }
+</script>
+
+</body>
+</html>
