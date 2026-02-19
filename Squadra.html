@@ -1173,7 +1173,7 @@
             event.preventDefault();
             
             const newPlayer = {
-                id: Math.max(...players.map(p => p.id), 0) + 1,
+                id: players.length === 0 ? 1 : Math.max(...players.map(p => p.id)) + 1,
                 name: document.getElementById('playerName').value,
                 sport: document.getElementById('playerSport').value,
                 age: parseInt(document.getElementById('playerAge').value),
@@ -1216,7 +1216,7 @@
                 players.filter(p => p.sport === 'volleyball').length,
                 players.filter(p => p.sport === 'tennis').length
             ];
-            sportChart.update('active');
+            sportChart.update('none');
         }
         
         // ========== Refresh Data ==========
@@ -1240,8 +1240,8 @@
             
             if (performanceChart) {
                 performanceChart.options.scales.y.grid.color = gridColor;
-                performanceChart.options.scales.y.ticks = { ...performanceChart.options.scales.y.ticks, color: textColor };
-                performanceChart.options.scales.x.ticks = { ...performanceChart.options.scales.x.ticks, color: textColor };
+                performanceChart.options.scales.y.ticks = { ...(performanceChart.options.scales.y.ticks || {}), color: textColor };
+                performanceChart.options.scales.x.ticks = { ...(performanceChart.options.scales.x.ticks || {}), color: textColor };
                 performanceChart.update('none');
             }
             
