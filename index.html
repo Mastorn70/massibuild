@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulazione Frigorifero - Mobile</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Frigorifero - Simulazione</h1>
+      <p class="muted">Tocca un compartimento per selezionarlo. Aggiungi prodotti tramite codice a barre.</p>
+    </header>
+
+    <main>
+      <section class="fridge-wrap">
+        <div class="fridge" id="fridge">
+          <img src="frigo1.png" alt="frigo" class="fridge-img">
+          <!-- overlay compartments (percent positions tuned for the image) -->
+          <button class="compartment" data-id="left-top" style="left:5%;top:8%">L1</button>
+          <button class="compartment" data-id="left-mid" style="left:5%;top:34%">L2</button>
+          <button class="compartment" data-id="left-bot" style="left:5%;top:62%">L3</button>
+
+          <button class="compartment" data-id="mid-top" style="left:37%;top:6%">M1</button>
+          <button class="compartment" data-id="mid-mid" style="left:37%;top:34%">M2</button>
+          <button class="compartment" data-id="mid-bot" style="left:37%;top:62%">M3</button>
+
+          <button class="compartment" data-id="right-door-1" style="left:75%;top:14%">R1</button>
+          <button class="compartment" data-id="right-door-2" style="left:75%;top:40%">R2</button>
+        </div>
+      </section>
+
+      <!-- Floating controls: menu and top-right scan button -->
+      <button id="menuBtn" class="floating menu-btn" aria-label="Apri menu">☰</button>
+      <button id="topScanBtn" class="floating scan-top" aria-label="Scansiona barcode">📷</button>
+
+      <!-- Modal that contains the form, tools and lists (hidden by default) -->
+      <div id="menuModal" class="modal" role="dialog" aria-hidden="true">
+        <div class="modal-inner">
+          <header class="modal-header">
+            <h2>Menu Frigorifero</h2>
+            <button id="closeMenuBtn" class="close">✕</button>
+          </header>
+          <div class="modal-body">
+            <form id="addForm">
+              <label>Codice a barre
+                <input id="barcode" placeholder="Inserisci barcode o 0123456789012" required>
+              </label>
+              <div class="row">
+                <label>Nome
+                  <input id="name" placeholder="Nome prodotto (auto se barcode trovato)">
+                </label>
+                <label>Quantità
+                  <input id="qty" type="number" value="1" min="1">
+                </label>
+              </div>
+              <div class="row">
+                <label>Scadenza
+                  <input id="expiry" type="date">
+                </label>
+                <label>Compartimento
+                  <select id="compartment">
+                    <option value="">(seleziona o tocca frigo)</option>
+                    <option value="left-top">L1</option>
+                    <option value="left-mid">L2</option>
+                    <option value="left-bot">L3</option>
+                    <option value="mid-top">M1</option>
+                    <option value="mid-mid">M2</option>
+                    <option value="mid-bot">M3</option>
+                    <option value="right-door-1">R1</option>
+                    <option value="right-door-2">R2</option>
+                  </select>
+                </label>
+              </div>
+              <div class="actions">
+                <button type="submit">Aggiungi prodotto</button>
+                <button type="button" id="clearBtn">Pulisci frigo</button>
+              </div>
+            </form>
+
+            <section class="tools">
+              <h3>Strumenti</h3>
+              <div class="tool-row">
+                <button id="scanBtn" type="button">Scansiona barcode (camera)</button>
+                <button id="exportBtn" type="button">Esporta JSON</button>
+              </div>
+              <div class="tool-row">
+                <input id="datasetUrl" placeholder="URL dataset (JSON)" />
+                <button id="importUrlBtn" type="button">Importa dataset</button>
+              </div>
+              <div class="tool-row">
+                <input id="syncUrl" placeholder="URL sincronizzazione (POST)" />
+                <button id="syncBtn" type="button">Sincronizza</button>
+              </div>
+            </section>
+
+            <section id="lists">
+              <h2>Contenuto</h2>
+              <div id="content"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer>
+      <small>Sample barcodes: 0123456789012 (Latte), 4006381333931 (Yogurt), 9780201379624 (Uova)</small>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Optionally load QuaggaJS dynamically if BarcodeDetector unsupported
+    (function(){
+      if(!('BarcodeDetector' in window)){
+        const s=document.createElement('script');
+        s.src='https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js';
+        s.onload = ()=>console.log('Quagga loaded');
+        document.head.appendChild(s);
+      }
+    })();
+  </script>
+</body>
+</html>
