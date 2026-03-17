@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Squadra - Dashboard Moderna</title>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- html2canvas and jsPDF for export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        /* ========== CSS Variables & Theme ========== */
+        :root {
+            /* Light mode colors */
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --info-gradient: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+            
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+            --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.2);
+            
+            --transition-fast: 0.2s ease;
+            --transition-normal: 0.3s ease;
+            --transition-slow: 0.5s ease;
+        }
+        
+        .dark-mode {
+            /* Dark mode colors */
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --info-gradient: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+            
+            --bg-color: #1a202c;
+            --card-bg: #2d3748;
+            --text-primary: #f7fafc;
+            --text-secondary: #cbd5e0;
+            --border-color: #4a5568;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+        
+        /* ========== Global Styles ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background var(--transition-normal), color var(--transition-normal);
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* ========== Header Styles ========== */
+        .header {
+            background: var(--primary-gradient);
+            padding: 2rem 1.5rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            animation: slideDown 0.5s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+        
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo {
+            font-size: 4rem;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        h1 {
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-container {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.75rem 1.25rem;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            transition: all var(--transition-normal);
+        }
+        
+        .filter-container:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .filter-container select {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            outline: none;
+        }
+        
+        .filter-container select:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-export {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .btn-dark-mode {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.5rem;
+            width: 50px;
+            height: 50px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* ========== Container & Layout ========== */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+        
+        /* ========== KPI Cards ========== */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.6s ease-out 0.2s backwards;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-normal);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--gradient);
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .kpi-card.kpi-players {
+            --gradient: var(--primary-gradient);
+        }
+        
+        .kpi-card.kpi-training {
+            --gradient: var(--success-gradient);
+        }
+        
+        .kpi-card.kpi-matches {
+            --gradient: var(--warning-gradient);
+        }
+        
+        .kpi-card.kpi-performance {
+            --gradient: var(--secondary-gradient);
+        }
+        
+        .kpi-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        
+        .kpi-label {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .kpi-value {
+            font-size: 3rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline-block;
+        }
+        
+        .kpi-change {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .kpi-change.positive {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4caf50;
+        }
+        
+        .kpi-change.negative {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+        }
+        
+        /* ========== Charts Section ========== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.6s ease-out 0.4s backwards;
+        }
+        
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-normal);
+        }
+        
+        .chart-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+        
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        /* ========== Table Section ========== */
+        .table-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.6s ease-out 0.6s backwards;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .table-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .table-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            transition: all var(--transition-fast);
+        }
+        
+        tbody tr:nth-child(even) {
+            background: rgba(102, 126, 234, 0.03);
+        }
+        
+        tbody tr:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.01);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        td {
+            padding: 1rem;
+            font-size: 0.95rem;
+        }
+        
+        /* ========== Sport Badges ========== */
+        .sport-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-fast);
+        }
+        
+        .sport-badge:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .sport-badge.football {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .sport-badge.basketball {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+        
+        .sport-badge.volleyball {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+            color: white;
+        }
+        
+        .sport-badge.tennis {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #333;
+        }
+        
+        /* ========== Status Indicators ========== */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .status-indicator::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: statusPulse 2s infinite;
+        }
+        
+        @keyframes statusPulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.3);
+            }
+        }
+        
+        .status-active {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4caf50;
+        }
+        
+        .status-active::before {
+            background: #4caf50;
+        }
+        
+        .status-injured {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+        }
+        
+        .status-injured::before {
+            background: #f44336;
+        }
+        
+        .status-rest {
+            background: rgba(255, 152, 0, 0.1);
+            color: #ff9800;
+        }
+        
+        .status-rest::before {
+            background: #ff9800;
+        }
+        
+        /* ========== Modal ========== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2.5rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+            animation: modalSlideIn 0.4s ease;
+            position: relative;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .modal-close {
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all var(--transition-fast);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .modal-close:hover {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            transform: rotate(90deg);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all var(--transition-fast);
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* ========== Responsive Design ========== */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .logo {
+                font-size: 3rem;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .kpi-value {
+                font-size: 2.5rem;
+            }
+            
+            .table-container {
+                font-size: 0.85rem;
+            }
+            
+            th, td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+        
+        @media (max-width: 500px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .kpi-card {
+                padding: 1.5rem;
+            }
+            
+            .chart-card {
+                padding: 1.5rem;
+            }
+            
+            .table-card {
+                padding: 1.5rem;
+            }
+        }
+        
+        /* ========== Utility Classes ========== */
+        .text-center {
+            text-align: center;
+        }
+        
+        .mt-2 {
+            margin-top: 2rem;
+        }
+        
+        .mb-2 {
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-title">
+                <span class="logo">⚽</span>
+                <div>
+                    <h1>Dashboard Squadra</h1>
+                    <p style="color: rgba(255, 255, 255, 0.9); margin-top: 0.25rem;">Gestione Moderna e Intelligente</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="filter-container">
+                    <label style="color: white; font-weight: 600;">Sport:</label>
+                    <select id="sportFilter" onchange="filterBySport()">
+                        <option value="all">Tutti</option>
+                        <option value="football">Calcio</option>
+                        <option value="basketball">Basket</option>
+                        <option value="volleyball">Pallavolo</option>
+                        <option value="tennis">Tennis</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary" onclick="openAddPlayerModal()">
+                    <span style="position: relative; z-index: 1;">➕ Aggiungi Giocatore</span>
+                </button>
+                
+                <button class="btn btn-export" onclick="exportToPDF()">
+                    <span style="position: relative; z-index: 1;">📄 Esporta PDF</span>
+                </button>
+                
+                <button class="btn btn-dark-mode" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                    <span id="darkModeIcon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <div class="container">
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-players">
+                <div class="kpi-icon">👥</div>
+                <div class="kpi-label">Totale Giocatori</div>
+                <div class="kpi-value" id="totalPlayers">0</div>
+                <div class="kpi-change positive">↑ 12% questo mese</div>
+            </div>
+            
+            <div class="kpi-card kpi-training">
+                <div class="kpi-icon">🏋️</div>
+                <div class="kpi-label">Ore di Allenamento</div>
+                <div class="kpi-value" id="trainingHours">0</div>
+                <div class="kpi-change positive">↑ 8% questo mese</div>
+            </div>
+            
+            <div class="kpi-card kpi-matches">
+                <div class="kpi-icon">🏆</div>
+                <div class="kpi-label">Partite Giocate</div>
+                <div class="kpi-value" id="matchesPlayed">0</div>
+                <div class="kpi-change positive">↑ 5% questo mese</div>
+            </div>
+            
+            <div class="kpi-card kpi-performance">
+                <div class="kpi-icon">📊</div>
+                <div class="kpi-label">Tasso di Vittoria</div>
+                <div class="kpi-value" id="winRate">0</div>
+                <div class="kpi-change negative">↓ 3% questo mese</div>
+            </div>
+        </div>
+        
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3 class="chart-title">📈 Performance Settimanale</h3>
+                <div class="chart-container">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <h3 class="chart-title">🎯 Distribuzione Sport</h3>
+                <div class="chart-container">
+                    <canvas id="sportDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Players Table -->
+        <div class="table-card">
+            <div class="table-header">
+                <h2 class="table-title">📋 Elenco Giocatori</h2>
+                <div class="table-actions">
+                    <button class="btn btn-primary btn-sm" onclick="refreshData()">
+                        <span style="position: relative; z-index: 1;">🔄 Aggiorna</span>
+                    </button>
+                    <button class="btn btn-export btn-sm" onclick="exportToCSV()">
+                        <span style="position: relative; z-index: 1;">📊 Esporta CSV</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="playersTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Sport</th>
+                            <th>Età</th>
+                            <th>Presenze</th>
+                            <th>Gol/Punti</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playersTableBody">
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Player Modal -->
+    <div id="addPlayerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Aggiungi Nuovo Giocatore</h2>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            
+            <form id="addPlayerForm" onsubmit="addPlayer(event)">
+                <div class="form-group">
+                    <label class="form-label">Nome Completo</label>
+                    <input type="text" class="form-input" id="playerName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Sport</label>
+                    <select class="form-input" id="playerSport" required>
+                        <option value="">Seleziona...</option>
+                        <option value="football">Calcio</option>
+                        <option value="basketball">Basket</option>
+                        <option value="volleyball">Pallavolo</option>
+                        <option value="tennis">Tennis</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Età</label>
+                    <input type="number" class="form-input" id="playerAge" min="10" max="50" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Stato</label>
+                    <select class="form-input" id="playerStatus" required>
+                        <option value="active">Attivo</option>
+                        <option value="injured">Infortunato</option>
+                        <option value="rest">Riposo</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <span style="position: relative; z-index: 1;">✅ Aggiungi Giocatore</span>
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // ========== Data Management ==========
+        let players = [
+            { id: 1, name: 'Mario Rossi', sport: 'football', age: 25, appearances: 45, goals: 12, status: 'active' },
+            { id: 2, name: 'Luigi Bianchi', sport: 'football', age: 28, appearances: 42, goals: 8, status: 'active' },
+            { id: 3, name: 'Giovanni Verdi', sport: 'basketball', age: 23, appearances: 38, goals: 156, status: 'active' },
+            { id: 4, name: 'Paolo Neri', sport: 'volleyball', age: 26, appearances: 40, goals: 89, status: 'injured' },
+            { id: 5, name: 'Andrea Gialli', sport: 'tennis', age: 24, appearances: 35, goals: 0, status: 'rest' },
+            { id: 6, name: 'Marco Blu', sport: 'football', age: 27, appearances: 48, goals: 15, status: 'active' },
+            { id: 7, name: 'Luca Viola', sport: 'basketball', age: 22, appearances: 36, goals: 142, status: 'active' },
+            { id: 8, name: 'Stefano Arancione', sport: 'volleyball', age: 29, appearances: 44, goals: 95, status: 'active' }
+        ];
+        
+        let currentFilter = 'all';
+        let performanceChart = null;
+        let sportChart = null;
+        
+        // ========== Initialization ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            updateKPIs();
+            renderPlayersTable();
+            animateKPIValues();
+        });
+        
+        // ========== KPI Animation ==========
+        function animateKPIValues() {
+            animateValue('totalPlayers', 0, players.length, 1000);
+            animateValue('trainingHours', 0, 1248, 1500);
+            animateValue('matchesPlayed', 0, 87, 1200);
+            animateValue('winRate', 0, 72, 1300, '%');
+        }
+        
+        function animateValue(id, start, end, duration, suffix = '') {
+            const element = document.getElementById(id);
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= end) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.floor(current) + suffix;
+            }, 16);
+        }
+        
+        // ========== Update KPIs ==========
+        function updateKPIs() {
+            const filteredPlayers = currentFilter === 'all' 
+                ? players 
+                : players.filter(p => p.sport === currentFilter);
+            
+            document.getElementById('totalPlayers').textContent = filteredPlayers.length;
+        }
+        
+        // ========== Charts Initialization ==========
+        function initializeCharts() {
+            // Performance Chart
+            const perfCtx = document.getElementById('performanceChart').getContext('2d');
+            performanceChart = new Chart(perfCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'],
+                    datasets: [{
+                        label: 'Performance',
+                        data: [65, 72, 68, 85, 78, 92, 88],
+                        borderColor: 'rgb(102, 126, 234)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: 'rgb(102, 126, 234)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            borderColor: 'rgba(102, 126, 234, 0.5)',
+                            borderWidth: 2,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+            
+            // Sport Distribution Chart
+            const sportCtx = document.getElementById('sportDistributionChart').getContext('2d');
+            sportChart = new Chart(sportCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Calcio', 'Basket', 'Pallavolo', 'Tennis'],
+                    datasets: [{
+                        data: [
+                            players.filter(p => p.sport === 'football').length,
+                            players.filter(p => p.sport === 'basketball').length,
+                            players.filter(p => p.sport === 'volleyball').length,
+                            players.filter(p => p.sport === 'tennis').length
+                        ],
+                        backgroundColor: [
+                            'rgba(79, 172, 254, 0.8)',
+                            'rgba(250, 112, 154, 0.8)',
+                            'rgba(48, 207, 208, 0.8)',
+                            'rgba(168, 237, 234, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgb(79, 172, 254)',
+                            'rgb(250, 112, 154)',
+                            'rgb(48, 207, 208)',
+                            'rgb(168, 237, 234)'
+                        ],
+                        borderWidth: 3,
+                        hoverOffset: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 13,
+                                    weight: '600'
+                                },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuart',
+                        animateRotate: true,
+                        animateScale: true
+                    }
+                }
+            });
+        }
+        
+        // ========== Table Rendering ==========
+        function renderPlayersTable() {
+            const tbody = document.getElementById('playersTableBody');
+            const filteredPlayers = currentFilter === 'all' 
+                ? players 
+                : players.filter(p => p.sport === currentFilter);
+            
+            tbody.innerHTML = filteredPlayers.map(player => `
+                <tr>
+                    <td><strong>${player.name}</strong></td>
+                    <td>${getSportBadge(player.sport)}</td>
+                    <td>${player.age}</td>
+                    <td>${player.appearances}</td>
+                    <td>${player.goals}</td>
+                    <td>${getStatusBadge(player.status)}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="editPlayer(${player.id})" style="margin-right: 0.5rem;">
+                            <span style="position: relative; z-index: 1;">✏️</span>
+                        </button>
+                        <button class="btn btn-export btn-sm" onclick="deletePlayer(${player.id})">
+                            <span style="position: relative; z-index: 1;">🗑️</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            updateKPIs();
+        }
+        
+        // ========== Badge Helpers ==========
+        function getSportBadge(sport) {
+            const badges = {
+                football: '<span class="sport-badge football">⚽ Calcio</span>',
+                basketball: '<span class="sport-badge basketball">🏀 Basket</span>',
+                volleyball: '<span class="sport-badge volleyball">🏐 Pallavolo</span>',
+                tennis: '<span class="sport-badge tennis">🎾 Tennis</span>'
+            };
+            return badges[sport] || sport;
+        }
+        
+        function getStatusBadge(status) {
+            const badges = {
+                active: '<span class="status-indicator status-active">Attivo</span>',
+                injured: '<span class="status-indicator status-injured">Infortunato</span>',
+                rest: '<span class="status-indicator status-rest">Riposo</span>'
+            };
+            return badges[status] || status;
+        }
+        
+        // ========== Filter Function ==========
+        function filterBySport() {
+            currentFilter = document.getElementById('sportFilter').value;
+            renderPlayersTable();
+        }
+        
+        // ========== Modal Functions ==========
+        function openAddPlayerModal() {
+            document.getElementById('addPlayerModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('addPlayerModal').classList.remove('show');
+            document.getElementById('addPlayerForm').reset();
+        }
+        
+        // ========== Player Management ==========
+        function addPlayer(event) {
+            event.preventDefault();
+            
+            const newPlayer = {
+                id: players.length === 0 ? 1 : Math.max(...players.map(p => p.id)) + 1,
+                name: document.getElementById('playerName').value,
+                sport: document.getElementById('playerSport').value,
+                age: parseInt(document.getElementById('playerAge').value),
+                appearances: 0,
+                goals: 0,
+                status: document.getElementById('playerStatus').value
+            };
+            
+            players.push(newPlayer);
+            renderPlayersTable();
+            updateCharts();
+            closeModal();
+            
+            // Show success message
+            alert('✅ Giocatore aggiunto con successo!');
+        }
+        
+        function editPlayer(id) {
+            const player = players.find(p => p.id === id);
+            if (player) {
+                alert(`Modifica giocatore: ${player.name}\n(Funzionalità da implementare)`);
+            }
+        }
+        
+        function deletePlayer(id) {
+            if (confirm('Sei sicuro di voler eliminare questo giocatore?')) {
+                players = players.filter(p => p.id !== id);
+                renderPlayersTable();
+                updateCharts();
+                alert('✅ Giocatore eliminato con successo!');
+            }
+        }
+        
+        // ========== Update Charts ==========
+        function updateCharts() {
+            // Update sport distribution chart
+            sportChart.data.datasets[0].data = [
+                players.filter(p => p.sport === 'football').length,
+                players.filter(p => p.sport === 'basketball').length,
+                players.filter(p => p.sport === 'volleyball').length,
+                players.filter(p => p.sport === 'tennis').length
+            ];
+            sportChart.update('none');
+        }
+        
+        // ========== Refresh Data ==========
+        function refreshData() {
+            renderPlayersTable();
+            updateKPIs();
+            updateCharts();
+            alert('✅ Dati aggiornati con successo!');
+        }
+        
+        // ========== Dark Mode Toggle ==========
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const icon = document.getElementById('darkModeIcon');
+            icon.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+            
+            // Update chart colors for dark mode
+            const isDark = document.body.classList.contains('dark-mode');
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+            const textColor = isDark ? '#f7fafc' : '#2d3748';
+            
+            if (performanceChart) {
+                performanceChart.options.scales.y.grid.color = gridColor;
+                if (performanceChart.options.scales.y.ticks) {
+                    performanceChart.options.scales.y.ticks.color = textColor;
+                }
+                if (performanceChart.options.scales.x.ticks) {
+                    performanceChart.options.scales.x.ticks.color = textColor;
+                }
+                performanceChart.update('none');
+            }
+            
+            if (sportChart) {
+                sportChart.options.plugins.legend.labels.color = textColor;
+                sportChart.update('none');
+            }
+        }
+        
+        // ========== Export to CSV ==========
+        function exportToCSV() {
+            const headers = ['Nome', 'Sport', 'Età', 'Presenze', 'Gol/Punti', 'Stato'];
+            const rows = players.map(p => [
+                p.name,
+                p.sport,
+                p.age,
+                p.appearances,
+                p.goals,
+                p.status
+            ]);
+            
+            let csvContent = headers.join(',') + '\n';
+            rows.forEach(row => {
+                csvContent += row.join(',') + '\n';
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'squadra_export_' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+        }
+        
+        // ========== Export to PDF ==========
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            
+            // Show loading message
+            alert('📄 Generazione PDF in corso...');
+            
+            // Use html2canvas to capture the page
+            html2canvas(document.body, {
+                scale: 2,
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const imgWidth = 210;
+                const pageHeight = 297;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+                
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                pdf.save('squadra_dashboard_' + new Date().toISOString().split('T')[0] + '.pdf');
+                alert('✅ PDF generato con successo!');
+            });
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('addPlayerModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
