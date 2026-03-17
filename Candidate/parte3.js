@@ -34,15 +34,6 @@ function toggleQuickForm() {
   if (card) card.classList.toggle('collapsed', quickFormCollapsed);
 }
 
-function normalizeDateStr(dateStr) {
-  if (!dateStr) return dateStr;
-  if (dateStr.includes('/')) {
-    const [dd, mm, yyyy] = dateStr.split('/');
-    return `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
-  }
-  return dateStr;
-}
-
 function syncQuickAlunniFromClass() {
   const classSelect = document.getElementById('quickClassSelect');
   const alunniInput = document.getElementById('quickAlunni');
@@ -375,7 +366,6 @@ function getOwnerLab(prof) {
 // ====== CALCOLO ALGORITMO (pianifica) ====== //
 // Full algorithm preserved (identical logic to original) with lab-bypass handling.
 // Included fixes: assignToProf uses slotTime, consecutive block tries multiple candidates.
-// Added debug exposures to window._last_sortedCandidates and window._last_candidateListOrdered.
 function pianifica() {
   const locked = state.risultato.filter(r => r.locked);
   state.risultato = [...locked];
@@ -513,9 +503,6 @@ function pianifica() {
     });
 
     const sortedCandidates = getSortedCandidates(profCandidates, activity.giorno);
-    // expose for debug after computing sortedCandidates for this activity
-    try { window._last_sortedCandidates = [...sortedCandidates]; } catch(e) {}
-    console.debug('pianifica: sortedCandidates', sortedCandidates);
 
     let primaryProf = null;
     let secondaryProf = null;
@@ -736,9 +723,6 @@ function pianifica() {
       return true;
     };
 
-    // expose for debug if needed
-    try { window._last_activity_processing = { activityName: activity.nome, day: activity.giorno, slots: slots.map(s=>s.start) }; } catch(e) {}
-
     for (let slotIdx = 0; slotIdx < slots.length; slotIdx++) {
       const s = slots[slotIdx];
       const slotKey = `${activity.giorno}|${s.start}|${activity.classe}|${activity.nome}`;
@@ -783,10 +767,6 @@ function pianifica() {
         // aggiungi sortedCandidates, evitando duplicati
         for (const c of sortedCandidates) if (!candidateListOrdered.includes(c)) candidateListOrdered.push(c);
 
-        // debug exposure
-        try { window._last_candidateListOrdered = [...candidateListOrdered]; } catch(e) {}
-        console.debug('pianifica: candidateListOrdered', candidateListOrdered);
-
         let chosenPrimary = null;
         for (const cand of candidateListOrdered) {
           if (canAssignBlock(cand, slotIdx, consecutiveRequired)) {
@@ -796,7 +776,6 @@ function pianifica() {
         }
 
         if (chosenPrimary) {
-          console.debug(`consecutive block: chosen primary ${chosenPrimary} for activity ${activity.nome} at ${activity.giorno} starting slotIdx ${slotIdx}`);
           // assegna il blocco al candidato scelto
           for (let i = 0; i < consecutiveRequired; i++) {
             const blockSlotTime = slots[slotIdx + i].start;
@@ -807,7 +786,6 @@ function pianifica() {
               primaryUsed = chosenPrimary;
             } else {
               // se non riesce ad assegnare un'ora del blocco, marca come pending
-              console.debug(`consecutive block: failed assignToProf ${chosenPrimary} for slot ${blockSlotTime}`);
               addPendingSlot(activity, blockSlotTime, activityLab);
             }
 
@@ -908,10 +886,16 @@ function ensurePlanningStickyLeft() {
   }, 40);
 }
 
-window.addEventListener('resize', () => {
-  setStickyLeftOffsets('planningTable', ['col-day','col-time']);
-  setStickyLeftOffsets('labPlanningTable', ['col-day','col-time']);
-});
+window.addEventListener('resize', (() => {
+  let _resizeTimer = null;
+  return () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+      setStickyLeftOffsets('planningTable', ['col-day','col-time']);
+      setStickyLeftOffsets('labPlanningTable', ['col-day','col-time']);
+    }, 100);
+  };
+})());
 
 // ====== HELPERS: decide se una data ha attività nella settimana/periodo ====== //
 function planningDayHasContent(dateStr) {
@@ -1405,7 +1389,7 @@ function printPlanning() {
         const cell = state.risultato.filter(r => normalizeDateStr(r.giorno) === dinfo.dateStr && r.ora === hour && r.classe === classe.nome);
         if (!cell.length) return;
         cell.forEach(r => {
-          html += `<tr><td>${dinfo.dateStr}</td><td>${hour}</td><td>${classe.nome}</td><td>${r.attivita || ''}</td><td>${r.professore || ''}</td><td>${r.laboratorio || ''}</td></tr>`;
+          html += `<tr><td>${escapeHtml(dinfo.dateStr)}</td><td>${escapeHtml(hour)}</td><td>${escapeHtml(classe.nome)}</td><td>${escapeHtml(r.attivita || '')}</td><td>${escapeHtml(r.professore || '')}</td><td>${escapeHtml(r.laboratorio || '')}</td></tr>`;
         });
       });
     });
@@ -1414,6 +1398,7 @@ function printPlanning() {
   html += '</tbody></table></body></html>';
 
   const w = window.open('', '_blank');
+  if (!w) return alert('Impossibile aprire la finestra di stampa. Controlla che i popup siano consentiti.');
   w.document.write(html);
   w.document.close();
   setTimeout(() => w.print(), 200);
@@ -1425,10 +1410,6 @@ function unlockPlanningActivity() {
 
   const { giorno, ora, classe, attivita } = planningSwapTarget;
   let found = false;
-
-  // debug info per la console (rimuovere in produzione se non serve)
-  console.log('unlockPlanningActivity: target=', planningSwapTarget);
-  console.log('unlockPlanningActivity: totale entries risultato=', state.risultato.length);
 
   state.risultato.forEach(r => {
     try {
@@ -1445,9 +1426,8 @@ function unlockPlanningActivity() {
         if (r.locked) {
           r.locked = false;
           found = true;
-          console.log('unlockPlanningActivity: sbloccata entry', r);
         } else {
-          console.log('unlockPlanningActivity: entry trovata ma non era locked', r);
+          // entry trovata ma non era locked: nessuna azione necessaria
         }
       }
     } catch (err) {
@@ -1514,12 +1494,12 @@ function printMatrix() {
   html += '<h2>Matrice Professori × Attività</h2>';
   html += '<table><thead><tr>';
   html += `<th>Professore</th><th>MaxG</th><th>MaxW</th><th>SaldoG</th><th>SaldoW</th>`;
-  activities.forEach(a => html += `<th>${a}</th>`);
+  activities.forEach(a => html += `<th>${escapeHtml(a)}</th>`);
   html += '</tr></thead><tbody>';
 
   rows.forEach(r => {
     html += '<tr>';
-    html += `<td>${r.nome}</td><td>${r.maxOreGiorno}</td><td>${r.maxOreSettimana}</td><td>${r.saldoG}</td><td>${r.saldoW}</td>`;
+    html += `<td>${escapeHtml(r.nome)}</td><td>${r.maxOreGiorno}</td><td>${r.maxOreSettimana}</td><td>${r.saldoG}</td><td>${r.saldoW}</td>`;
     activities.forEach(a => html += `<td>${r.ore[a] || 0}</td>`);
     html += '</tr>';
   });
@@ -1527,6 +1507,7 @@ function printMatrix() {
   html += '</tbody></table></body></html>';
 
   const w = window.open('', '_blank');
+  if (!w) return alert('Impossibile aprire la finestra di stampa. Controlla che i popup siano consentiti.');
   w.document.write(html);
   w.document.close();
   setTimeout(() => w.print(), 300);
