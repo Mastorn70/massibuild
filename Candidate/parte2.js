@@ -455,7 +455,7 @@ function resetRulesConfig() {
 
 function loadRulesConfig() {
     const saved = localStorage.getItem(RULES_KEY);
-    if(saved) Object.assign(rulesConfig, JSON.parse(saved));
+    if(saved) try { Object.assign(rulesConfig, JSON.parse(saved)); } catch(e) { console.warn('loadRulesConfig: JSON non valido, regole ripristinate ai valori di default', e); }
     try {
         document.getElementById('rule1Enable').checked = rulesConfig.rule1Enable; document.getElementById('rule1Value').value = rulesConfig.rule1Value;
         document.getElementById('rule1Min').value = rulesConfig.rule1Min; document.getElementById('rule1Max').value = rulesConfig.rule1Max;
@@ -2598,12 +2598,6 @@ window.closeSummaryModal = closeSummaryModal;
 window.saveAllSummaryChanges = saveAllSummaryChanges;
 window.deleteSummaryItem = deleteSummaryItem;
 window.summaryAddNew = summaryAddNew;
-
-// helper escape HTML
-function escapeHtml(s) {
-  if (s === null || s === undefined) return '';
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
 
 // Add new item from "add" row
 function summaryAddNew(group) {
