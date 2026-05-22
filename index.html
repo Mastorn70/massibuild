@@ -1,124 +1,1664 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Simulazione Frigorifero - Mobile</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Strava Music Pacer</title>
+  <style>
+    :root {
+      --orange: #fc4c02;
+      --dark: #1a1a2e;
+      --card: #16213e;
+      --card2: #0f3460;
+      --text: #e0e0e0;
+      --easy: #2ecc71;
+      --medium: #f39c12;
+      --hard: #e74c3c;
+      --vhard: #8e44ad;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #fc4c02, #e63900);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 4px 20px rgba(252,76,2,0.4);
+    }
+    header svg { width: 36px; height: 36px; fill: white; flex-shrink: 0; }
+    header h1 { font-size: 1.6rem; font-weight: 700; color: white; }
+    header p  { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+
+    main { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+
+    /* UPLOAD AREA */
+    .upload-zone {
+      border: 2px dashed var(--orange);
+      border-radius: 16px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      background: rgba(252,76,2,0.04);
+    }
+    .upload-zone:hover, .upload-zone.drag { background: rgba(252,76,2,0.1); border-color: #ff6a30; }
+    .upload-zone svg { width: 48px; height: 48px; fill: var(--orange); margin-bottom: 12px; }
+    .upload-zone h2 { font-size: 1.2rem; margin-bottom: 6px; }
+    .upload-zone p  { font-size: 0.85rem; color: #888; }
+    .upload-zone input { display: none; }
+    .btn-upload {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 26px;
+      background: var(--orange);
+      color: white;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-upload:hover { background: #e63900; transform: scale(1.03); }
+
+    /* STATS CARDS */
+    #results { display: none; margin-top: 36px; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 18px 14px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .stat-card .value { font-size: 1.8rem; font-weight: 700; color: var(--orange); }
+    .stat-card .label { font-size: 0.75rem; color: #888; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* DIFFICULTY BADGE */
+    .difficulty-section {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .diff-icon { font-size: 3rem; }
+    .diff-info h3 { font-size: 1rem; color: #888; margin-bottom: 4px; }
+    .diff-badge {
+      display: inline-block;
+      padding: 6px 20px;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .diff-desc { font-size: 0.85rem; color: #aaa; margin-top: 6px; }
+
+    /* PROGRESS BAR */
+    .progress-bar-wrap {
+      margin-top: 12px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px;
+      height: 8px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 340px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 1s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ELEVATION CHART */
+    .chart-section {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 28px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .chart-section h3 { font-size: 0.95rem; color: #888; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    canvas { width: 100% !important; max-height: 140px; display: block; }
+
+    /* MAP */
+    .map-section {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 28px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .map-section h3 { font-size: 0.95rem; color: #888; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    #routeMap { border-radius: 10px; overflow: hidden; display: block; width: 100%; cursor: crosshair; }
+    .map-legend { display: flex; gap: 18px; margin-top: 10px; font-size: 0.78rem; color: #888; }
+    .map-legend span { display: flex; align-items: center; gap: 5px; }
+    .map-legend i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; display: inline-block; flex-shrink: 0; }
+
+    /* PLAYLIST SECTION */
+    .playlist-section {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .playlist-section h3 {
+      font-size: 1rem;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .playlist-section .subtitle { font-size: 0.82rem; color: #888; margin-bottom: 20px; }
+
+    .playlist-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: transparent;
+      color: #aaa;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active { background: var(--orange); border-color: var(--orange); color: white; font-weight: 600; }
+    .tab-btn:hover:not(.active) { border-color: var(--orange); color: var(--orange); }
+
+    .playlist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .song-card {
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      text-decoration: none;
+      color: var(--text);
+      transition: background 0.2s, transform 0.15s;
+      cursor: pointer;
+    }
+    .song-card:hover { background: rgba(252,76,2,0.12); transform: translateY(-2px); border-color: rgba(252,76,2,0.3); }
+    .song-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--card2);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .song-info .title { font-size: 0.88rem; font-weight: 600; line-height: 1.3; }
+    .song-info .meta  { font-size: 0.75rem; color: #888; margin-top: 2px; }
+    .bpm-pill {
+      margin-left: auto;
+      flex-shrink: 0;
+      background: rgba(252,76,2,0.2);
+      color: var(--orange);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .yt-btn {
+      display: block;
+      margin-top: 20px;
+      text-align: center;
+      padding: 12px 28px;
+      background: #ff0000;
+      color: white;
+      border-radius: 30px;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .yt-btn:hover { background: #cc0000; transform: scale(1.02); }
+
+    /* LIVE RUN */
+    .live-section {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,0.06);
+      margin-top: 28px;
+    }
+    .btn-run {
+      padding: 11px 28px;
+      background: #2ecc71;
+      color: #0d1117;
+      border: none;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-run:hover { background: #27ae60; transform: scale(1.03); }
+    .btn-stop {
+      padding: 11px 22px;
+      background: rgba(231,76,60,0.15);
+      color: #e74c3c;
+      border: 1px solid rgba(231,76,60,0.4);
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-stop:hover { background: rgba(231,76,60,0.28); }
+    .live-status {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      margin-bottom: 16px;
+    }
+    .live-status.acquiring { background: rgba(243,156,18,0.12); color: #f39c12; border: 1px solid rgba(243,156,18,0.3); }
+    .live-status.active    { background: rgba(46,204,113,0.10); color: #2ecc71;  border: 1px solid rgba(46,204,113,0.3); }
+    .live-status.error     { background: rgba(231,76,60,0.12);  color: #e74c3c;  border: 1px solid rgba(231,76,60,0.3); }
+    .live-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .live-card {
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      padding: 14px 10px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .lv { font-size: 1.35rem; font-weight: 700; color: var(--orange); }
+    .ll { font-size: 0.72rem; color: #888; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .progress-route-wrap {
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px;
+      height: 10px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-route-fill {
+      height: 100%;
+      border-radius: 10px;
+      background: var(--orange);
+      transition: width 0.8s ease;
+    }
+    .pace-feedback {
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+    .live-music-btn {
+      display: block;
+      text-align: center;
+      padding: 14px;
+      background: linear-gradient(135deg, #ff0000, #cc0000);
+      color: white;
+      border-radius: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 1rem;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.02em;
+    }
+    .live-music-btn:hover { opacity: 0.88; transform: scale(1.01); }
+    .live-dot { animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+    /* MY MUSIC ANALYSIS */
+    .mymusic-section {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,0.06);
+      margin-top: 28px;
+    }
+    .mymusic-drop {
+      border: 2px dashed rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      margin-bottom: 16px;
+    }
+    .mymusic-drop:hover, .mymusic-drop.drag { background: rgba(255,255,255,0.04); border-color: var(--orange); }
+    .mymusic-drop p { color: #888; font-size: 0.85rem; margin-top: 6px; }
+    .mymusic-drop input { display: none; }
+    .btn-analyze {
+      padding: 10px 24px;
+      background: var(--orange);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-analyze:hover { background: #e63900; }
+    .btn-analyze:disabled { background: #555; cursor: not-allowed; }
+    .analysis-progress { margin: 14px 0; display: none; }
+    .analysis-progress-bar { height: 6px; background: rgba(255,255,255,0.08); border-radius:6px; overflow:hidden; }
+    .analysis-progress-fill { height: 100%; background: var(--orange); border-radius:6px; transition: width 0.3s; }
+    .analysis-progress p { font-size: 0.8rem; color: #888; margin-bottom: 6px; }
+    .music-results { margin-top: 16px; display: none; }
+    .music-result-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: background 0.15s;
+    }
+    .music-result-row:hover { background: rgba(255,255,255,0.06); }
+    .music-result-row.match   { border-color: rgba(46,204,113,0.3); background: rgba(46,204,113,0.05); }
+    .music-result-row.close   { border-color: rgba(243,156,18,0.3); background: rgba(243,156,18,0.04); }
+    .music-result-row.nomatch { opacity: 0.55; }
+    .mr-play {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: none; cursor: pointer;
+      color: white; font-size: 0.95rem; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .mr-play:hover { background: var(--orange); }
+    .mr-play.playing { background: var(--orange); }
+    .mr-name { flex: 1; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mr-dur  { font-size: 0.78rem; color: #888; flex-shrink: 0; }
+    .mr-bpm  { font-size: 0.82rem; font-weight: 700; color: var(--orange); flex-shrink: 0; width: 60px; text-align: right; }
+    .mr-badge { flex-shrink: 0; font-size: 0.75rem; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+    .badge-match   { background: rgba(46,204,113,0.15); color: #2ecc71; }
+    .badge-close   { background: rgba(243,156,18,0.15); color: #f39c12; }
+    .badge-nomatch { background: rgba(255,255,255,0.07); color: #666; }
+    .mini-player {
+      display: none;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 12px;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    .mini-player.active { display: flex; }
+    .mini-player-info { flex: 1; font-size: 0.85rem; overflow: hidden; }
+    .mini-player-info .mpt { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mini-player-info .mpb { font-size: 0.75rem; color: #888; }
+    .btn-dl {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.15);
+      background: transparent; color: var(--text); font-size: 0.83rem; cursor: pointer;
+      text-decoration: none; transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-dl:hover { border-color: var(--orange); color: var(--orange); background: rgba(252,76,2,0.06); }
+
+    /* ALERT */
+    .error-box {
+      background: rgba(231,76,60,0.12);
+      border: 1px solid rgba(231,76,60,0.4);
+      border-radius: 10px;
+      padding: 14px 18px;
+      color: #e74c3c;
+      font-size: 0.88rem;
+      margin-top: 16px;
+      display: none;
+    }
+
+    /* LOADING */
+    .loader { display: none; text-align: center; margin: 32px 0; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(252,76,2,0.2);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* RESPONSIVE */
+    @media (max-width: 500px) {
+      header h1 { font-size: 1.2rem; }
+      .stat-card .value { font-size: 1.4rem; }
+      .difficulty-section { flex-direction: column; text-align: center; }
+    }
+  </style>
 </head>
 <body>
-  <div class="app">
-    <header>
-      <h1>Frigorifero - Simulazione</h1>
-      <p class="muted">Tocca un compartimento per selezionarlo. Aggiungi prodotti tramite codice a barre.</p>
-    </header>
 
-    <main>
-      <section class="fridge-wrap">
-        <div class="fridge" id="fridge">
-          <img src="frigo2.png" alt="frigo" class="fridge-img">
-          <!-- overlay compartments (percent positions tuned for the image) -->
-          <button class="compartment" data-id="left-top" style="left:5%;top:8%">L1</button>
-          <button class="compartment" data-id="left-mid" style="left:5%;top:34%">L2</button>
-          <button class="compartment" data-id="left-bot" style="left:5%;top:62%">L3</button>
+<header>
+  <svg viewBox="0 0 24 24"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg>
+  <div>
+    <h1>Strava Music Pacer</h1>
+    <p>Analizza il tuo percorso e ottieni la playlist perfetta per migliorare il ritmo</p>
+  </div>
+</header>
 
-          <button class="compartment" data-id="mid-top" style="left:37%;top:6%">M1</button>
-          <button class="compartment" data-id="mid-mid" style="left:37%;top:34%">M2</button>
-          <button class="compartment" data-id="mid-bot" style="left:37%;top:62%">M3</button>
+<main>
 
-          <button class="compartment" data-id="right-door-1" style="left:75%;top:14%">R1</button>
-          <button class="compartment" data-id="right-door-2" style="left:75%;top:40%">R2</button>
-        </div>
-      </section>
-
-      <!-- Floating controls: menu and top-right scan button -->
-      <button id="menuBtn" class="floating menu-btn" aria-label="Apri menu">☰</button>
-      <button id="topScanBtn" class="floating scan-top" aria-label="Scansiona barcode">📷</button>
-
-      <!-- Modal that contains the form, tools and lists (hidden by default) -->
-      <div id="menuModal" class="modal" role="dialog" aria-hidden="true">
-        <div class="modal-inner">
-          <header class="modal-header">
-            <h2>Menu Frigorifero</h2>
-            <button id="closeMenuBtn" class="close">✕</button>
-          </header>
-          <div class="modal-body">
-            <form id="addForm">
-              <label>Codice a barre
-                <input id="barcode" placeholder="Inserisci barcode o 0123456789012" required>
-              </label>
-              <div class="row">
-                <label>Nome
-                  <input id="name" placeholder="Nome prodotto (auto se barcode trovato)">
-                </label>
-                <label>Quantità
-                  <input id="qty" type="number" value="1" min="1">
-                </label>
-              </div>
-              <div class="row">
-                <label>Scadenza
-                  <input id="expiry" type="date">
-                </label>
-                <label>Compartimento
-                  <select id="compartment">
-                    <option value="">(seleziona o tocca frigo)</option>
-                    <option value="left-top">L1</option>
-                    <option value="left-mid">L2</option>
-                    <option value="left-bot">L3</option>
-                    <option value="mid-top">M1</option>
-                    <option value="mid-mid">M2</option>
-                    <option value="mid-bot">M3</option>
-                    <option value="right-door-1">R1</option>
-                    <option value="right-door-2">R2</option>
-                  </select>
-                </label>
-              </div>
-              <div class="actions">
-                <button type="submit">Aggiungi prodotto</button>
-                <button type="button" id="clearBtn">Pulisci frigo</button>
-              </div>
-            </form>
-
-            <section class="tools">
-              <h3>Strumenti</h3>
-              <div class="tool-row">
-                <button id="scanBtn" type="button">Scansiona barcode (camera)</button>
-                <button id="exportBtn" type="button">Esporta JSON</button>
-              </div>
-              <div class="tool-row">
-                <input id="datasetUrl" placeholder="URL dataset (JSON)" />
-                <button id="importUrlBtn" type="button">Importa dataset</button>
-              </div>
-              <div class="tool-row">
-                <input id="syncUrl" placeholder="URL sincronizzazione (POST)" />
-                <button id="syncBtn" type="button">Sincronizza</button>
-              </div>
-            </section>
-
-            <section id="lists">
-              <h2>Contenuto</h2>
-              <div id="content"></div>
-            </section>
-          </div>
-        </div>
-      </div>
-    </main>
-    <footer>
-      <small>Sample barcodes: 0123456789012 (Latte), 4006381333931 (Yogurt), 9780201379624 (Uova)</small>
-    </footer>
+  <!-- UPLOAD -->
+  <div class="upload-zone" id="dropZone">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM8 16.5v-5l1.5 1.5 1-1L8 9.5l-2.5 2.5 1 1L8 11.5v5h.01H8zm5.5 0v-5l1.5 1.5 1-1-2.5-2.5-2.5 2.5 1 1 1.5-1.5v5h.01H13.5z"/></svg>
+    <h2>Trascina il file GPX qui</h2>
+    <p>Esporta la tua attività da Strava → Opzioni → Esporta GPX</p>
+    <button class="btn-upload" onclick="document.getElementById('fileInput').click()">Scegli file GPX</button>
+    <input type="file" id="fileInput" accept=".gpx,.xml" />
   </div>
 
-  <script src="app.js"></script>
-  <script>
-    // Optionally load QuaggaJS dynamically if BarcodeDetector unsupported
-    (function(){
-      if(!('BarcodeDetector' in window)){
-        const s=document.createElement('script');
-        s.src='https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js';
-        s.onload = ()=>console.log('Quagga loaded');
-        document.head.appendChild(s);
+  <div class="error-box" id="errorBox"></div>
+  <div class="loader" id="loader"><div class="spinner"></div><p style="color:#888;font-size:.9rem">Analisi percorso in corso…</p></div>
+
+  <!-- RESULTS -->
+  <div id="results">
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="difficulty-section" id="diffSection">
+      <div class="diff-icon" id="diffIcon"></div>
+      <div class="diff-info" style="flex:1">
+        <h3>Difficoltà del percorso</h3>
+        <span class="diff-badge" id="diffBadge"></span>
+        <p class="diff-desc" id="diffDesc"></p>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="diffBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <h3>&#9650; Profilo altimetrico</h3>
+      <canvas id="elevChart"></canvas>
+    </div>
+
+    <div class="map-section" id="mapSection">
+      <h3>&#128205; Percorso su mappa</h3>
+      <canvas id="routeMap"></canvas>
+      <div class="map-legend">
+        <span><i style="background:#2ecc71"></i> Partenza</span>
+        <span><i id="endDotColor" style="background:var(--orange)"></i> Arrivo</span>
+      </div>
+    </div>
+
+    <div class="playlist-section">
+      <h3>🎵 Playlist consigliata</h3>
+      <p class="subtitle" id="playlistSubtitle"></p>
+
+      <div class="playlist-tabs" id="playlistTabs"></div>
+      <div class="playlist-grid" id="playlistGrid"></div>
+      <a id="ytMainLink" class="yt-btn" href="#" target="_blank" rel="noopener">▶ Apri playlist completa su YouTube</a>
+    </div>
+
+    <!-- MY MUSIC -->
+    <div class="mymusic-section" id="myMusicSection" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+        <span style="font-size:1.8rem">📁</span>
+        <div>
+          <div style="font-size:1rem;font-weight:700">La Tua Musica</div>
+          <div style="font-size:0.82rem;color:#888;margin-top:2px">Analizza i tuoi file audio · rileva il BPM · vedi quali corrispondono al percorso</div>
+        </div>
+      </div>
+
+      <!-- Download playlist -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 20px">
+        <button class="btn-dl" onclick="downloadM3U()">⬇ Scarica playlist .m3u <span style="color:#888;font-size:.75rem">(VLC)</span></button>
+        <button class="btn-dl" onclick="downloadTXT()">⬇ Lista brani .txt</button>
+      </div>
+
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin-bottom:20px">
+
+      <!-- Local file analysis -->
+      <div class="mymusic-drop" id="musicDropZone" onclick="document.getElementById('musicFileInput').click()">
+        <div style="font-size:2rem">🎵</div>
+        <strong>Trascina i tuoi file audio qui</strong>
+        <p>MP3 · AAC · OGG · WAV · FLAC · M4A — analisi BPM locale, nessun upload</p>
+        <input type="file" id="musicFileInput" accept="audio/*" multiple />
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()" disabled>Analizza BPM</button>
+        <span id="musicFileCount" style="font-size:.82rem;color:#888"></span>
+      </div>
+
+      <div class="analysis-progress" id="analysisProgress">
+        <p id="analysisProgressLabel">Analisi…</p>
+        <div class="analysis-progress-bar"><div class="analysis-progress-fill" id="analysisProgressFill" style="width:0%"></div></div>
+      </div>
+
+      <div class="music-results" id="musicResults">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <span id="musicResultsSummary" style="font-size:.85rem;color:#aaa"></span>
+          <label style="font-size:.8rem;color:#888;display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="filterMatch" onchange="applyMusicFilter()" style="accent-color:var(--orange)">
+            Solo brani compatibili
+          </label>
+        </div>
+        <div id="musicResultsList"></div>
+        <div class="mini-player" id="miniPlayer">
+          <button class="mr-play playing" id="miniPlayBtn" onclick="toggleMiniPlay()">⏸</button>
+          <div class="mini-player-info">
+            <div class="mpt" id="miniPlayerName">—</div>
+            <div class="mpb" id="miniPlayerBpm">—</div>
+          </div>
+          <audio id="audioPlayer" onended="onAudioEnded()"></audio>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE RUN -->
+    <div class="live-section" id="liveSection" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+        <span style="font-size:2rem">🏃</span>
+        <div>
+          <div style="font-size:1rem;font-weight:700">Modalità Corsa Live</div>
+          <div style="font-size:0.82rem;color:#888;margin-top:2px">GPS in tempo reale · posizione sul percorso · passo attuale vs target</div>
+        </div>
+      </div>
+
+      <div id="liveGpsStatus" class="live-status" style="display:none"></div>
+
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="btn-run" id="btnStartRun" onclick="startLiveRun()">▶ Avvia Corsa</button>
+        <button class="btn-stop" id="btnStopRun" onclick="stopLiveRun()" style="display:none">■ Ferma</button>
+      </div>
+
+      <div id="liveStatsPanel" style="display:none">
+        <div class="live-grid">
+          <div class="live-card"><div class="lv" id="lvDistCovered">—</div><div class="ll">Percorsa</div></div>
+          <div class="live-card"><div class="lv" id="lvDistRemain">—</div><div class="ll">Rimanente</div></div>
+          <div class="live-card"><div class="lv" id="lvProgress">—</div><div class="ll">Completato</div></div>
+          <div class="live-card"><div class="lv" id="lvPaceCurrent">—</div><div class="ll">Passo attuale</div></div>
+          <div class="live-card"><div class="lv" id="lvPaceTarget">—</div><div class="ll">Passo target</div></div>
+          <div class="live-card"><div class="lv" id="lvAccuracy">—</div><div class="ll">Precisione GPS</div></div>
+        </div>
+        <div class="progress-route-wrap"><div class="progress-route-fill" id="progressRouteFill" style="width:0%"></div></div>
+        <div class="pace-feedback" id="paceFeedback" style="display:none"></div>
+        <a id="liveMusicBtn" class="live-music-btn" href="#" target="_blank" rel="noopener">🎵 Apri la Playlist su YouTube</a>
+        <p style="font-size:0.75rem;color:#555;margin-top:10px;text-align:center">💡 Apri YouTube in un'altra scheda, metti la playlist in riproduzione e inizia a correre</p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ─── PLAYLIST DATA ────────────────────────────────────────────────────────────
+const PLAYLISTS = {
+  easy: {
+    label: "Facile",
+    color: "#2ecc71",
+    icon: "🟢",
+    bpmRange: "120–140 BPM",
+    desc: "Ritmo rilassato e costante. Canzoni energiche ma non frenetiche per mantenere un passo aerobico confortevole.",
+    ytSearch: "https://www.youtube.com/results?search_query=running+playlist+120+130+bpm+easy+jog",
+    ytPlaylist: "https://www.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI",
+    tabs: ["Pop", "Indie", "Elettronica"],
+    songs: {
+      "Pop": [
+        { title: "Levitating", artist: "Dua Lipa", bpm: 103, yt: "https://www.youtube.com/watch?v=TUVcZfQe-Kw" },
+        { title: "Blinding Lights", artist: "The Weeknd", bpm: 171, yt: "https://www.youtube.com/watch?v=4NRXx6U8ABQ" },
+        { title: "As It Was", artist: "Harry Styles", bpm: 174, yt: "https://www.youtube.com/watch?v=H5v3kku4y6Q" },
+        { title: "Don't Start Now", artist: "Dua Lipa", bpm: 124, yt: "https://www.youtube.com/watch?v=oygrmJFKYZY" },
+        { title: "Watermelon Sugar", artist: "Harry Styles", bpm: 95, yt: "https://www.youtube.com/watch?v=E07s5ZYygMg" },
+        { title: "Good 4 U", artist: "Olivia Rodrigo", bpm: 166, yt: "https://www.youtube.com/watch?v=gNi_6U5Pm_o" }
+      ],
+      "Indie": [
+        { title: "Electric Feel", artist: "MGMT", bpm: 113, yt: "https://www.youtube.com/watch?v=MmZexg8sxyk" },
+        { title: "Take It Easy", artist: "Eagles", bpm: 140, yt: "https://www.youtube.com/watch?v=AkOkAOkzxKs" },
+        { title: "Dog Days Are Over", artist: "Florence + Machine", bpm: 181, yt: "https://www.youtube.com/watch?v=iWOyfLBYtuU" },
+        { title: "Young Folks", artist: "Peter Bjorn and John", bpm: 110, yt: "https://www.youtube.com/watch?v=vFrjMq4aL-g" },
+        { title: "Mr. Brightside", artist: "The Killers", bpm: 148, yt: "https://www.youtube.com/watch?v=gGdGFtwCNBE" }
+      ],
+      "Elettronica": [
+        { title: "Midnight City", artist: "M83", bpm: 105, yt: "https://www.youtube.com/watch?v=dX3k_QDnzHE" },
+        { title: "Outro", artist: "M83", bpm: 78, yt: "https://www.youtube.com/watch?v=V7yDbEMqH-s" },
+        { title: "You & Me (Flume Remix)", artist: "Disclosure", bpm: 128, yt: "https://www.youtube.com/watch?v=hoc_IyJTRI8" },
+        { title: "Lean On", artist: "Major Lazer", bpm: 98, yt: "https://www.youtube.com/watch?v=YqeW9_5kURI" }
+      ]
+    }
+  },
+  medium: {
+    label: "Moderato",
+    color: "#f39c12",
+    icon: "🟡",
+    bpmRange: "140–165 BPM",
+    desc: "Ritmo sostenuto. La musica ti aiuta a mantenere la cadenza ottimale (170–175 passi/min) e spingere nei tratti pianeggianti.",
+    ytSearch: "https://www.youtube.com/results?search_query=running+playlist+150+160+bpm+workout",
+    ytPlaylist: "https://www.youtube.com/playlist?list=PLFgquLnL59akA9TC1_NvHFDgDWKmX08Y0",
+    tabs: ["Rock", "Hip-Hop", "EDM"],
+    songs: {
+      "Rock": [
+        { title: "Eye of the Tiger", artist: "Survivor", bpm: 109, yt: "https://www.youtube.com/watch?v=btPJPFnesV4" },
+        { title: "Thunderstruck", artist: "AC/DC", bpm: 134, yt: "https://www.youtube.com/watch?v=v2AC41dglnM" },
+        { title: "Don't Stop Me Now", artist: "Queen", bpm: 156, yt: "https://www.youtube.com/watch?v=HgzGwKwLmgM" },
+        { title: "All I Do Is Win", artist: "DJ Khaled", bpm: 80, yt: "https://www.youtube.com/watch?v=GGXzlMMISzA" },
+        { title: "Bohemian Rhapsody", artist: "Queen", bpm: 72, yt: "https://www.youtube.com/watch?v=fJ9rUzIMcZQ" },
+        { title: "Welcome to the Jungle", artist: "Guns N' Roses", bpm: 122, yt: "https://www.youtube.com/watch?v=o1tj2zJ2Wvg" }
+      ],
+      "Hip-Hop": [
+        { title: "HUMBLE.", artist: "Kendrick Lamar", bpm: 150, yt: "https://www.youtube.com/watch?v=tvTRZJ-4EyI" },
+        { title: "Stronger", artist: "Kanye West", bpm: 104, yt: "https://www.youtube.com/watch?v=PsO6ZnUZI0g" },
+        { title: "Power", artist: "Kanye West", bpm: 90, yt: "https://www.youtube.com/watch?v=L53gjP-TtGE" },
+        { title: "Sicko Mode", artist: "Travis Scott", bpm: 155, yt: "https://www.youtube.com/watch?v=6ONRf7h3Mdk" },
+        { title: "God's Plan", artist: "Drake", bpm: 77, yt: "https://www.youtube.com/watch?v=xpVfcZ0ZcFM" }
+      ],
+      "EDM": [
+        { title: "Levels", artist: "Avicii", bpm: 126, yt: "https://www.youtube.com/watch?v=_ovdm2yX4MA" },
+        { title: "Wake Me Up", artist: "Avicii", bpm: 124, yt: "https://www.youtube.com/watch?v=IcrbM1l_BoI" },
+        { title: "Clarity", artist: "Zedd ft. Foxes", bpm: 128, yt: "https://www.youtube.com/watch?v=IxxstCcJlsc" },
+        { title: "Animals", artist: "Martin Garrix", bpm: 128, yt: "https://www.youtube.com/watch?v=gCYcHz2k5x0" },
+        { title: "Titanium", artist: "David Guetta ft. Sia", bpm: 126, yt: "https://www.youtube.com/watch?v=JRfuAukYTKg" }
+      ]
+    }
+  },
+  hard: {
+    label: "Difficile",
+    color: "#e74c3c",
+    icon: "🔴",
+    bpmRange: "165–180 BPM",
+    desc: "Percorso impegnativo. Musica ad alta energia per alimentare lo sprint, superare i momenti di fatica e conquistare le salite.",
+    ytSearch: "https://www.youtube.com/results?search_query=intense+running+playlist+170+bpm+hard+workout",
+    ytPlaylist: "https://www.youtube.com/playlist?list=PLFgquLnL59akNLnBoRiGXQOjhMGRBvPLf",
+    tabs: ["Metal", "Trap", "Techno"],
+    songs: {
+      "Metal": [
+        { title: "Enter Sandman", artist: "Metallica", bpm: 123, yt: "https://www.youtube.com/watch?v=CD-E-LDc384" },
+        { title: "Run to the Hills", artist: "Iron Maiden", bpm: 170, yt: "https://www.youtube.com/watch?v=SpEHNKRjEZ0" },
+        { title: "Master of Puppets", artist: "Metallica", bpm: 220, yt: "https://www.youtube.com/watch?v=E0ozmU9cJDg" },
+        { title: "War Pigs", artist: "Black Sabbath", bpm: 83, yt: "https://www.youtube.com/watch?v=LQUXuQ6BFNU" },
+        { title: "Back in Black", artist: "AC/DC", bpm: 93, yt: "https://www.youtube.com/watch?v=pAgnJDJN4VA" }
+      ],
+      "Trap": [
+        { title: "DNA.", artist: "Kendrick Lamar", bpm: 138, yt: "https://www.youtube.com/watch?v=NLZRYQMLDW4" },
+        { title: "Bad and Boujee", artist: "Migos", bpm: 130, yt: "https://www.youtube.com/watch?v=BI3YH0SIOCE" },
+        { title: "Antidote", artist: "Travis Scott", bpm: 130, yt: "https://www.youtube.com/watch?v=naf5EOlhXqA" },
+        { title: "XO Tour Llif3", artist: "Lil Uzi Vert", bpm: 123, yt: "https://www.youtube.com/watch?v=WrsFXgW5Rew" },
+        { title: "mo bamba", artist: "Sheck Wes", bpm: 73, yt: "https://www.youtube.com/watch?v=wSDNm8WVSL0" }
+      ],
+      "Techno": [
+        { title: "Blue (Da Ba Dee)", artist: "Eiffel 65 (techno remix)", bpm: 138, yt: "https://www.youtube.com/results?search_query=blue+da+ba+dee+techno+remix+running" },
+        { title: "Sandstorm", artist: "Darude", bpm: 136, yt: "https://www.youtube.com/watch?v=y6120QOlsfU" },
+        { title: "The Age of Love", artist: "Charlotte de Witte", bpm: 140, yt: "https://www.youtube.com/watch?v=9NKGZZ14h98" },
+        { title: "Insomnia", artist: "Faithless", bpm: 138, yt: "https://www.youtube.com/watch?v=5fQ3MNmGwKo" }
+      ]
+    }
+  },
+  vhard: {
+    label: "Estremo",
+    color: "#8e44ad",
+    icon: "🟣",
+    bpmRange: "180–200+ BPM",
+    desc: "Percorso estremamente impegnativo. Musica al massimo dell'intensità per spingere oltre i tuoi limiti e non mollare mai.",
+    ytSearch: "https://www.youtube.com/results?search_query=extreme+workout+running+playlist+180+200+bpm",
+    ytPlaylist: "https://www.youtube.com/playlist?list=PLFgquLnL59al7NnB3GQFMTOlmLkJh0BoX",
+    tabs: ["Metal Estremo", "Dubstep", "Drum & Bass"],
+    songs: {
+      "Metal Estremo": [
+        { title: "Duality", artist: "Slipknot", bpm: 124, yt: "https://www.youtube.com/watch?v=0dFBl_JNkZw" },
+        { title: "Before I Forget", artist: "Slipknot", bpm: 171, yt: "https://www.youtube.com/watch?v=3GRj9P9N0SM" },
+        { title: "Body Count", artist: "Body Count", bpm: 140, yt: "https://www.youtube.com/watch?v=sSmLsNfRm_E" },
+        { title: "Chop Suey!", artist: "System of a Down", bpm: 192, yt: "https://www.youtube.com/watch?v=CSvFpBOe8eY" },
+        { title: "B.Y.O.B.", artist: "System of a Down", bpm: 180, yt: "https://www.youtube.com/watch?v=qBXqNlq_dOA" }
+      ],
+      "Dubstep": [
+        { title: "Scary Monsters and Nice Sprites", artist: "Skrillex", bpm: 140, yt: "https://www.youtube.com/watch?v=WSeNSzJ2-Jw" },
+        { title: "Bangarang", artist: "Skrillex", bpm: 110, yt: "https://www.youtube.com/watch?v=YJVmu6yttiw" },
+        { title: "Monster", artist: "Skrillex & Diplo", bpm: 140, yt: "https://www.youtube.com/watch?v=KGR5H3Fc7ZA" },
+        { title: "Bass Cannon", artist: "Flux Pavilion", bpm: 140, yt: "https://www.youtube.com/watch?v=lDnorFhU7YE" }
+      ],
+      "Drum & Bass": [
+        { title: "Reprogrammed to Hate", artist: "Noisia", bpm: 174, yt: "https://www.youtube.com/watch?v=pHj2-5KXKKE" },
+        { title: "Machine Gun", artist: "Noisia", bpm: 174, yt: "https://www.youtube.com/watch?v=0q0VVbFVRIE" },
+        { title: "Run", artist: "Chase & Status ft. Delilah", bpm: 174, yt: "https://www.youtube.com/watch?v=K2LKQmPTEkc" },
+        { title: "Jungle", artist: "Drake", bpm: 150, yt: "https://www.youtube.com/watch?v=dqIgjigIjkM" }
+      ]
+    }
+  }
+};
+
+// ─── GPX PARSER ──────────────────────────────────────────────────────────────
+function parseGPX(text) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(text, 'application/xml');
+  if (xml.querySelector('parsererror')) throw new Error('File GPX non valido');
+
+  const trkpts = Array.from(xml.querySelectorAll('trkpt'));
+  if (!trkpts.length) throw new Error('Nessun punto trovato nel file GPX. Assicurati di esportare una traccia (trkpt).');
+
+  // Soglia velocità minima per considerare il runner "in movimento" (m/s)
+  const MOVING_THRESHOLD_MS = 0.5; // 0.5 m/s ≈ 1.8 km/h
+
+  let dist = 0, elevGain = 0, elevLoss = 0, movingTimeSec = 0;
+  const elevations = [], coords = [];
+  let prevLat, prevLon, prevEle, prevTime, startTime, endTime;
+
+  trkpts.forEach((pt, i) => {
+    const lat = parseFloat(pt.getAttribute('lat'));
+    const lon = parseFloat(pt.getAttribute('lon'));
+    const eleEl = pt.querySelector('ele');
+    const timeEl = pt.querySelector('time');
+    const ele = eleEl ? parseFloat(eleEl.textContent) : null;
+    const t = timeEl ? new Date(timeEl.textContent) : null;
+
+    if (i === 0 && t) startTime = t;
+    if (t) endTime = t;
+
+    if (ele !== null) {
+      elevations.push(ele);
+      if (prevEle !== undefined) {
+        const diff = ele - prevEle;
+        if (diff > 0) elevGain += diff;
+        else elevLoss += Math.abs(diff);
       }
-    })();
-  </script>
+      prevEle = ele;
+    }
+
+    if (prevLat !== undefined) {
+      const segDistKm = haversine(prevLat, prevLon, lat, lon);
+      dist += segDistKm;
+
+      // Calcola il tempo in movimento per questo segmento
+      if (prevTime && t) {
+        const segSec = (t - prevTime) / 1000;
+        if (segSec > 0) {
+          const speedMs = (segDistKm * 1000) / segSec; // m/s
+          if (speedMs >= MOVING_THRESHOLD_MS) {
+            movingTimeSec += segSec;
+          }
+        }
+      }
+    }
+    prevLat = lat; prevLon = lon;
+    if (t) prevTime = t;
+    coords.push([lat, lon]);
+  });
+
+  const durationMs = (startTime && endTime) ? (endTime - startTime) : null;
+  const durationMin = durationMs ? durationMs / 60000 : null;
+  const movingTimeMin = movingTimeSec > 0 ? movingTimeSec / 60 : null;
+  // Usa il tempo in movimento per il passo medio; fallback al totale se assente
+  const paceBaseMin = movingTimeMin || durationMin;
+  const avgPaceSecPerKm = (paceBaseMin && dist > 0) ? (paceBaseMin * 60) / dist : null;
+
+  return { dist, elevGain, elevLoss, elevations, coords, durationMin, movingTimeMin, avgPaceSecPerKm };
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+// ─── MAP (canvas self-contained, no external deps) ───────────────────────────
+function drawMap(coords, routeColor, livePos) {
+  const section = document.getElementById('mapSection');
+  // Sostituisci il canvas ad ogni caricamento
+  let canvas = document.getElementById('routeMap');
+  const newCanvas = document.createElement('canvas');
+  newCanvas.id = 'routeMap';
+  canvas.replaceWith(newCanvas);
+  canvas = newCanvas;
+
+  const W = section.clientWidth - 40; // tolgo il padding della card
+  const H = Math.round(W * 0.52);     // aspect ratio ~2:1
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Bounds geografici
+  const lats = coords.map(c => c[0]);
+  const lons = coords.map(c => c[1]);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const minLon = Math.min(...lons), maxLon = Math.max(...lons);
+  const spanLat = maxLat - minLat || 0.001;
+  const spanLon = maxLon - minLon || 0.001;
+
+  // Correzione aspect ratio per proiezione equirettangolare
+  const cosLat = Math.cos((minLat + maxLat) / 2 * Math.PI / 180);
+  const geoAR  = (spanLon * cosLat) / spanLat;  // rapporto lon/lat corretto
+  const canAR  = W / H;
+
+  const pad = 28;
+  let drawW = W - pad * 2;
+  let drawH = H - pad * 2;
+  // Mantieni proporzioni reali del percorso
+  if (geoAR > canAR) {
+    drawH = drawW / geoAR;
+  } else {
+    drawW = drawH * geoAR;
+  }
+  const offX = (W - drawW) / 2;
+  const offY = (H - drawH) / 2;
+
+  function project([lat, lon]) {
+    const x = offX + ((lon - minLon) / spanLon) * drawW;
+    const y = offY + ((maxLat - lat) / spanLat) * drawH; // lat invertita
+    return [x, y];
+  }
+
+  // ── Sfondo ──
+  ctx.fillStyle = '#0d1117';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, W, H, 10);
+  ctx.fill();
+
+  // ── Griglia ──
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 5; i++) {
+    const x = offX + drawW * i / 5;
+    const y = offY + drawH * i / 5;
+    ctx.beginPath(); ctx.moveTo(x, offY); ctx.lineTo(x, offY + drawH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(offX, y); ctx.lineTo(offX + drawW, y); ctx.stroke();
+  }
+
+  // ── Ombra tracciato ──
+  ctx.save();
+  ctx.strokeStyle = routeColor + '44';
+  ctx.lineWidth = 8;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  coords.forEach(([lat, lon], i) => {
+    const [x, y] = project([lat, lon]);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.restore();
+
+  // ── Tracciato principale ──
+  ctx.strokeStyle = routeColor;
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  coords.forEach(([lat, lon], i) => {
+    const [x, y] = project([lat, lon]);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // ── Marker partenza (verde) ──
+  function drawDot(lat, lon, color, label) {
+    const [x, y] = project([lat, lon]);
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 11px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x, y - 12);
+  }
+  drawDot(coords[0][0], coords[0][1], '#2ecc71', '▶ Start');
+  drawDot(coords[coords.length-1][0], coords[coords.length-1][1], routeColor, '⬛ Fine');
+
+  // ── Posizione live (GPS) ──
+  if (livePos) {
+    const [px, py] = project([livePos.lat, livePos.lon]);
+    // Cerchio precisione GPS
+    if (livePos.accuracy) {
+      const accKm  = livePos.accuracy / 1000;
+      const accPx  = (accKm / (spanLon * cosLat * 111)) * drawW;
+      ctx.beginPath();
+      ctx.arc(px, py, Math.min(accPx, 60), 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(52,152,219,0.15)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(52,152,219,0.45)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // Dot principale blu
+    ctx.beginPath();
+    ctx.arc(px, py, 9, 0, Math.PI * 2);
+    ctx.fillStyle = '#3498db';
+    ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 11px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Sei qui', px, py - 14);
+  }
+
+  // ── Barra scala ──
+  const scaleKm = +(spanLon * cosLat * 111 / 5).toFixed(1); // ~1/5 della larghezza
+  const scaleLabel = scaleKm >= 1 ? scaleKm.toFixed(1) + ' km' : Math.round(scaleKm * 1000) + ' m';
+  const scalePx = drawW / 5;
+  const sx = offX + 8, sy = offY + drawH - 10;
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + scalePx, sy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sx, sy - 4); ctx.lineTo(sx, sy + 4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sx + scalePx, sy - 4); ctx.lineTo(sx + scalePx, sy + 4); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(scaleLabel, sx + scalePx / 2, sy - 6);
+}
+
+// ─── DIFFICULTY ───────────────────────────────────────────────────────────────
+function calcDifficulty({ dist, elevGain }) {
+  const elevPerKm = dist > 0 ? elevGain / dist : 0;
+  let score = 0;
+
+  // Distance score (0–4)
+  if (dist < 5)       score += 1;
+  else if (dist < 10) score += 2;
+  else if (dist < 21) score += 3;
+  else                score += 4;
+
+  // Elevation score (0–4)
+  if (elevPerKm < 5)       score += 1;
+  else if (elevPerKm < 15) score += 2;
+  else if (elevPerKm < 30) score += 3;
+  else                     score += 4;
+
+  if (score <= 2)      return { key: 'easy',   pct: 20 };
+  else if (score <= 4) return { key: 'medium', pct: 45 };
+  else if (score <= 6) return { key: 'hard',   pct: 72 };
+  else                 return { key: 'vhard',  pct: 100 };
+}
+
+// ─── ELEVATION CHART ─────────────────────────────────────────────────────────
+function drawChart(elevations, color) {
+  const canvas = document.getElementById('elevChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 800;
+  const H = 140;
+  canvas.width = W; canvas.height = H;
+
+  const min = Math.min(...elevations);
+  const max = Math.max(...elevations);
+  const range = max - min || 1;
+  const pad = { top: 12, bottom: 28, left: 40, right: 16 };
+  const drawW = W - pad.left - pad.right;
+  const drawH = H - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (drawH * i / 4);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+  }
+
+  // Area fill
+  const grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+  grad.addColorStop(0, color + 'cc');
+  grad.addColorStop(1, color + '11');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  elevations.forEach((e, i) => {
+    const x = pad.left + (i / (elevations.length - 1)) * drawW;
+    const y = pad.top + drawH - ((e - min) / range) * drawH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo(pad.left + drawW, H - pad.bottom);
+  ctx.lineTo(pad.left, H - pad.bottom);
+  ctx.closePath();
+  ctx.fill();
+
+  // Line
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  elevations.forEach((e, i) => {
+    const x = pad.left + (i / (elevations.length - 1)) * drawW;
+    const y = pad.top + drawH - ((e - min) / range) * drawH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Y axis labels
+  ctx.fillStyle = '#888';
+  ctx.font = '11px system-ui';
+  ctx.textAlign = 'right';
+  [0, 0.5, 1].forEach(t => {
+    const v = Math.round(min + range * (1 - t));
+    const y = pad.top + drawH * t;
+    ctx.fillText(v + 'm', pad.left - 5, y + 4);
+  });
+}
+
+// ─── UI HELPERS ──────────────────────────────────────────────────────────────
+function fmtDist(km) { return km >= 1 ? km.toFixed(2) + ' km' : Math.round(km * 1000) + ' m'; }
+function fmtPace(secPerKm) {
+  if (!secPerKm) return '—';
+  const m = Math.floor(secPerKm / 60);
+  const s = Math.round(secPerKm % 60).toString().padStart(2, '0');
+  return m + ':' + s + ' /km';
+}
+function fmtDur(min) {
+  if (!min) return '—';
+  const h = Math.floor(min / 60);
+  const m = Math.round(min % 60);
+  return h > 0 ? h + 'h ' + m + 'min' : m + ' min';
+}
+
+let currentTabSongs = null;
+
+function renderPlaylist(key, tabIndex) {
+  const pl = PLAYLISTS[key];
+  const tabName = pl.tabs[tabIndex];
+  const songs = pl.songs[tabName];
+  currentTabSongs = songs;
+
+  const grid = document.getElementById('playlistGrid');
+  grid.innerHTML = songs.map(s => `
+    <a class="song-card" href="${s.yt}" target="_blank" rel="noopener">
+      <div class="song-thumb">🎵</div>
+      <div class="song-info">
+        <div class="title">${s.title}</div>
+        <div class="meta">${s.artist}</div>
+      </div>
+      <span class="bpm-pill">${s.bpm} BPM</span>
+    </a>
+  `).join('');
+}
+
+function renderTabs(key) {
+  const pl = PLAYLISTS[key];
+  const tabs = document.getElementById('playlistTabs');
+  tabs.innerHTML = pl.tabs.map((t, i) => `
+    <button class="tab-btn${i === 0 ? ' active' : ''}" data-idx="${i}" onclick="switchTab('${key}', this)">${t}</button>
+  `).join('');
+  renderPlaylist(key, 0);
+}
+
+function switchTab(key, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPlaylist(key, parseInt(btn.dataset.idx));
+}
+
+// ─── MAIN RENDER ─────────────────────────────────────────────────────────────
+function showResults(data) {
+  const { dist, elevGain, elevLoss, elevations, coords, durationMin, movingTimeMin, avgPaceSecPerKm } = data;
+  const diff = calcDifficulty(data);
+  const pl = PLAYLISTS[diff.key];
+
+  // Stats
+  const statsGrid = document.getElementById('statsGrid');
+  statsGrid.innerHTML = `
+    <div class="stat-card"><div class="value">${fmtDist(dist)}</div><div class="label">Distanza</div></div>
+    <div class="stat-card"><div class="value">+${Math.round(elevGain)} m</div><div class="label">Dislivello +</div></div>
+    <div class="stat-card"><div class="value">${elevations.length ? Math.round(Math.min(...elevations)) + '–' + Math.round(Math.max(...elevations)) + ' m' : '—'}</div><div class="label">Quota min–max</div></div>
+    <div class="stat-card"><div class="value">${fmtDur(durationMin)}</div><div class="label">Durata totale</div></div>
+    <div class="stat-card" style="${movingTimeMin && durationMin && Math.round((movingTimeMin/durationMin)*100) < 98 ? 'border-color:rgba(252,76,2,0.45)' : ''}">
+      <div class="value" style="font-size:1.35rem">${fmtDur(movingTimeMin)}</div>
+      <div class="label">Tempo in movimento</div>
+      ${movingTimeMin && durationMin ? `<div style="font-size:0.72rem;color:#888;margin-top:3px">${Math.round((movingTimeMin/durationMin)*100)}% del totale</div>` : ''}
+    </div>
+    <div class="stat-card"><div class="value">${fmtPace(avgPaceSecPerKm)}</div><div class="label">Passo (in mov.)</div></div>
+    <div class="stat-card"><div class="value">${Math.round(elevGain / Math.max(dist, 0.001))} m/km</div><div class="label">Dislivello/km</div></div>
+  `;
+
+  // Difficulty
+  document.getElementById('diffIcon').textContent = pl.icon;
+  const badge = document.getElementById('diffBadge');
+  badge.textContent = pl.label.toUpperCase();
+  badge.style.background = pl.color + '22';
+  badge.style.color = pl.color;
+  badge.style.border = '1px solid ' + pl.color + '55';
+  document.getElementById('diffDesc').textContent = pl.desc;
+  const bar = document.getElementById('diffBar');
+  bar.style.background = pl.color;
+  setTimeout(() => { bar.style.width = diff.pct + '%'; }, 80);
+
+  // Chart
+  if (elevations.length > 1) {
+    setTimeout(() => drawChart(elevations, pl.color), 100);
+  } else {
+    document.querySelector('.chart-section').style.display = 'none';
+  }
+
+  // Map
+  if (coords.length > 1) {
+    document.getElementById('endDotColor').style.background = pl.color;
+    setTimeout(() => drawMap(coords, pl.color), 50);
+  } else {
+    document.getElementById('mapSection').style.display = 'none';
+  }
+
+  // Playlist
+  document.getElementById('playlistSubtitle').textContent =
+    `Difficoltà ${pl.label.toLowerCase()} rilevata — BPM consigliati: ${pl.bpmRange}`;
+  renderTabs(diff.key);
+  document.getElementById('ytMainLink').href = pl.ytPlaylist;
+  document.getElementById('ytMainLink').textContent = `▶ Apri playlist "${pl.label}" su YouTube`;
+
+  // Live run — inizializza stato globale
+  routeCoords    = coords;
+  routeCumDist   = buildCumDist(coords);
+  routeTotalDist = dist;
+  routeColor     = pl.color;
+  liveDiffKey    = diff.key;
+  currentDiffKey = diff.key;
+  const target   = PACE_TARGETS[diff.key];
+  document.getElementById('lvPaceTarget').textContent =
+    fmtPace(target.min) + '–' + fmtPace(target.max);
+  document.getElementById('liveMusicBtn').href = pl.ytPlaylist;
+  document.getElementById('liveMusicBtn').textContent = `🎵 Playlist "${pl.label}" su YouTube (${pl.bpmRange})`;
+  document.getElementById('liveSection').style.display    = 'block';
+  document.getElementById('myMusicSection').style.display = 'block';
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─── MY MUSIC ─────────────────────────────────────────────────────────────────
+let pendingMusicFiles = [];
+let analyzedSongs     = [];
+let currentDiffKey    = null;
+let currentPlayingIdx = null;
+
+// ── Download helpers ──────────────────────────────────────────────────────────
+function getAllSongsForDiff(key) {
+  const pl = PLAYLISTS[key];
+  return pl.tabs.flatMap(tab => pl.songs[tab]);
+}
+
+function downloadM3U() {
+  if (!currentDiffKey) return;
+  const songs = getAllSongsForDiff(currentDiffKey);
+  const pl    = PLAYLISTS[currentDiffKey];
+  let text = '#EXTM3U\n';
+  songs.forEach(s => {
+    text += `#EXTINF:0,${s.title} - ${s.artist} (${s.bpm} BPM)\n${s.yt}\n`;
+  });
+  triggerDownload(text, `playlist-${pl.label.toLowerCase()}.m3u`, 'audio/x-mpegurl');
+}
+
+function downloadTXT() {
+  if (!currentDiffKey) return;
+  const songs = getAllSongsForDiff(currentDiffKey);
+  const pl    = PLAYLISTS[currentDiffKey];
+  let text = `Playlist: ${pl.label} — ${pl.bpmRange}\n`;
+  text += `Generata da Strava Music Pacer\n${'─'.repeat(50)}\n\n`;
+  songs.forEach((s, i) => {
+    text += `${i + 1}. ${s.title} — ${s.artist}\n   BPM: ${s.bpm} | ${s.yt}\n\n`;
+  });
+  triggerDownload(text, `playlist-${pl.label.toLowerCase()}.txt`, 'text/plain');
+}
+
+function triggerDownload(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// ── BPM Detection (Web Audio API, no network) ────────────────────────────────
+async function analyzeBPM(file) {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) throw new Error('Web Audio API non supportata');
+  const ctx = new AudioCtx();
+  try {
+    const arrayBuffer  = await file.arrayBuffer();
+    const audioBuffer  = await ctx.decodeAudioData(arrayBuffer);
+    const sampleRate   = audioBuffer.sampleRate;
+    const maxSamples   = Math.min(audioBuffer.length, sampleRate * 90); // max 90s
+
+    // Mix to mono
+    const mono = new Float32Array(maxSamples);
+    for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+      const chData = audioBuffer.getChannelData(ch);
+      for (let i = 0; i < maxSamples; i++) mono[i] += chData[i] / audioBuffer.numberOfChannels;
+    }
+
+    // Energy envelope via sliding RMS (window ~23ms)
+    const winSize = Math.round(sampleRate * 0.023);
+    const hop     = Math.round(sampleRate / 200); // ~200 frames/sec
+    const energy  = [];
+    for (let i = 0; i + winSize < maxSamples; i += hop) {
+      let e = 0;
+      for (let j = 0; j < winSize; j++) e += mono[i + j] ** 2;
+      energy.push(e / winSize);
+    }
+
+    // Autocorrelation on energy signal to find dominant period
+    const fps    = sampleRate / hop;
+    const minLag = Math.max(1, Math.round(fps * 60 / 210)); // 210 BPM
+    const maxLag = Math.round(fps * 60 / 55);               //  55 BPM
+    const N      = Math.min(energy.length - maxLag, Math.round(fps * 30));
+
+    let bestLag = minLag, bestCorr = -Infinity;
+    for (let lag = minLag; lag <= maxLag; lag++) {
+      let corr = 0;
+      for (let i = 0; i < N; i++) corr += energy[i] * energy[i + lag];
+      if (corr > bestCorr) { bestCorr = corr; bestLag = lag; }
+    }
+
+    ctx.close();
+    return { bpm: Math.round(fps * 60 / bestLag), duration: audioBuffer.duration };
+  } catch (e) {
+    ctx.close();
+    throw e;
+  }
+}
+
+// ── File input / drag & drop ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const mDrop = document.getElementById('musicDropZone');
+  const mInput = document.getElementById('musicFileInput');
+  if (!mDrop || !mInput) return;
+
+  mInput.addEventListener('change', e => setMusicFiles([...e.target.files]));
+  mDrop.addEventListener('dragover', e => { e.preventDefault(); mDrop.classList.add('drag'); });
+  mDrop.addEventListener('dragleave', () => mDrop.classList.remove('drag'));
+  mDrop.addEventListener('drop', e => {
+    e.preventDefault();
+    mDrop.classList.remove('drag');
+    const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('audio/'));
+    setMusicFiles(files);
+  });
+});
+
+function setMusicFiles(files) {
+  pendingMusicFiles = files;
+  document.getElementById('musicFileCount').textContent =
+    files.length ? `${files.length} file selezionat${files.length > 1 ? 'i' : 'o'}` : '';
+  document.getElementById('btnAnalyze').disabled = files.length === 0;
+}
+
+// ── Analysis runner ───────────────────────────────────────────────────────────
+async function startAnalysis() {
+  if (!pendingMusicFiles.length) return;
+  analyzedSongs = [];
+  currentPlayingIdx = null;
+
+  const prog  = document.getElementById('analysisProgress');
+  const fill  = document.getElementById('analysisProgressFill');
+  const label = document.getElementById('analysisProgressLabel');
+  const btn   = document.getElementById('btnAnalyze');
+  btn.disabled = true;
+  prog.style.display = 'block';
+  document.getElementById('musicResults').style.display = 'none';
+
+  for (let i = 0; i < pendingMusicFiles.length; i++) {
+    const file = pendingMusicFiles[i];
+    label.textContent = `Analisi ${i + 1}/${pendingMusicFiles.length}: ${file.name}`;
+    fill.style.width  = ((i / pendingMusicFiles.length) * 100) + '%';
+    try {
+      const { bpm, duration } = await analyzeBPM(file);
+      analyzedSongs.push({ file, name: file.name, bpm, duration, url: URL.createObjectURL(file) });
+    } catch {
+      analyzedSongs.push({ file, name: file.name, bpm: null, duration: null, url: URL.createObjectURL(file) });
+    }
+  }
+
+  fill.style.width = '100%';
+  label.textContent = 'Analisi completata!';
+  setTimeout(() => { prog.style.display = 'none'; }, 800);
+  btn.disabled = false;
+
+  analyzedSongs.sort((a, b) => bpmMatch(b.bpm) - bpmMatch(a.bpm)); // matching first
+  renderMusicResults();
+}
+
+function bpmMatch(bpm) {
+  if (!bpm || !currentDiffKey) return 0;
+  const t = PACE_TARGETS[currentDiffKey];
+  // Remap pace targets to BPM targets for running cadence
+  const bpmTargets = { easy:{min:120,max:145}, medium:{min:145,max:165}, hard:{min:165,max:180}, vhard:{min:180,max:200} };
+  const b = bpmTargets[currentDiffKey];
+  if (bpm >= b.min && bpm <= b.max)         return 3; // perfect
+  if (bpm >= b.min - 15 && bpm <= b.max + 15) return 2; // close
+  if (bpm * 2 >= b.min && bpm * 2 <= b.max)   return 1; // half time match
+  return 0;
+}
+
+function bpmLabel(bpm) {
+  const m = bpmMatch(bpm);
+  if (m === 3) return { cls: 'match',   badge: '✅ Nel range',     row: 'match' };
+  if (m === 2) return { cls: 'close',   badge: '⚡ Quasi',         row: 'close' };
+  return             { cls: 'nomatch',  badge: '—',                row: 'nomatch' };
+}
+
+function fmtSeconds(sec) {
+  if (!sec) return '—';
+  return Math.floor(sec / 60) + ':' + Math.round(sec % 60).toString().padStart(2, '0');
+}
+
+function renderMusicResults(filterOnly = false) {
+  const list = document.getElementById('musicResultsList');
+  const res  = document.getElementById('musicResults');
+  const songs = filterOnly
+    ? analyzedSongs.filter(s => bpmMatch(s.bpm) >= 2)
+    : analyzedSongs;
+
+  const matchCount = analyzedSongs.filter(s => bpmMatch(s.bpm) === 3).length;
+  const closeCount = analyzedSongs.filter(s => bpmMatch(s.bpm) === 2).length;
+  document.getElementById('musicResultsSummary').textContent =
+    `${analyzedSongs.length} brani analizzati · ✅ ${matchCount} nel range · ⚡ ${closeCount} vicini`;
+
+  list.innerHTML = songs.map((s, i) => {
+    const idx = analyzedSongs.indexOf(s);
+    const lbl = bpmLabel(s.bpm);
+    return `
+      <div class="music-result-row ${lbl.row}" id="mr-${idx}">
+        <button class="mr-play" id="mrBtn-${idx}" onclick="playLocalSong(${idx})" title="Riproduci">▶</button>
+        <span class="mr-name" title="${s.name}">${s.name.replace(/\.[^.]+$/, '')}</span>
+        <span class="mr-dur">${fmtSeconds(s.duration)}</span>
+        <span class="mr-bpm">${s.bpm ? s.bpm + ' BPM' : '—'}</span>
+        <span class="mr-badge badge-${lbl.cls}">${lbl.badge}</span>
+      </div>`;
+  }).join('');
+  res.style.display = 'block';
+}
+
+function applyMusicFilter() {
+  renderMusicResults(document.getElementById('filterMatch').checked);
+}
+
+// ── Mini audio player ─────────────────────────────────────────────────────────
+function playLocalSong(idx) {
+  const song   = analyzedSongs[idx];
+  const player = document.getElementById('audioPlayer');
+
+  if (currentPlayingIdx === idx) {
+    player.paused ? player.play() : player.pause();
+    document.getElementById('mrBtn-' + idx).textContent = player.paused ? '▶' : '⏸';
+    document.getElementById('miniPlayBtn').textContent  = player.paused ? '▶' : '⏸';
+    return;
+  }
+
+  // Stop previous
+  if (currentPlayingIdx !== null) {
+    player.pause();
+    const prev = document.getElementById('mrBtn-' + currentPlayingIdx);
+    if (prev) { prev.textContent = '▶'; prev.classList.remove('playing'); }
+  }
+
+  currentPlayingIdx = idx;
+  player.src = song.url;
+  player.play();
+
+  document.getElementById('mrBtn-' + idx).textContent = '⏸';
+  document.getElementById('mrBtn-' + idx).classList.add('playing');
+  document.getElementById('miniPlayerName').textContent = song.name.replace(/\.[^.]+$/, '');
+  document.getElementById('miniPlayerBpm').textContent  = song.bpm ? song.bpm + ' BPM · ' + bpmLabel(song.bpm).badge : '—';
+  document.getElementById('miniPlayer').classList.add('active');
+  document.getElementById('miniPlayBtn').textContent = '⏸';
+}
+
+function toggleMiniPlay() {
+  const player = document.getElementById('audioPlayer');
+  if (player.paused) { player.play(); document.getElementById('miniPlayBtn').textContent = '⏸'; }
+  else               { player.pause(); document.getElementById('miniPlayBtn').textContent = '▶'; }
+  if (currentPlayingIdx !== null) {
+    document.getElementById('mrBtn-' + currentPlayingIdx).textContent = player.paused ? '▶' : '⏸';
+  }
+}
+
+function onAudioEnded() {
+  if (currentPlayingIdx !== null) {
+    const btn = document.getElementById('mrBtn-' + currentPlayingIdx);
+    if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
+  }
+  document.getElementById('miniPlayBtn').textContent = '▶';
+}
+
+// ─── LIVE RUN ─────────────────────────────────────────────────────────────────
+let routeCoords    = [];
+let routeCumDist   = []; // km cumulativi per ogni punto
+let routeTotalDist = 0;
+let routeColor     = '#fc4c02';
+let liveDiffKey    = null;
+let liveWatchId    = null;
+let gpsHistory     = []; // { lat, lon, time }
+let liveMapTimer   = null;
+
+const PACE_TARGETS = {
+  easy:   { min: 390, max: 450 }, // sec/km  6:30–7:30
+  medium: { min: 300, max: 390 }, //          5:00–6:30
+  hard:   { min: 240, max: 300 }, //          4:00–5:00
+  vhard:  { min: 180, max: 240 }  //          3:00–4:00
+};
+
+function buildCumDist(coords) {
+  const cum = [0];
+  for (let i = 1; i < coords.length; i++) {
+    cum.push(cum[i - 1] + haversine(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]));
+  }
+  return cum;
+}
+
+function nearestOnRoute(lat, lon) {
+  let bestDist = Infinity, bestCum = 0;
+  for (let i = 0; i < routeCoords.length - 1; i++) {
+    const [la1, lo1] = routeCoords[i];
+    const [la2, lo2] = routeCoords[i + 1];
+    const dx = la2 - la1, dy = lo2 - lo1;
+    const len2 = dx * dx + dy * dy;
+    const t = len2 > 0 ? Math.max(0, Math.min(1, ((lat - la1) * dx + (lon - lo1) * dy) / len2)) : 0;
+    const nearLat = la1 + t * dx, nearLon = lo1 + t * dy;
+    const d = haversine(lat, lon, nearLat, nearLon);
+    if (d < bestDist) {
+      bestDist = d;
+      bestCum  = routeCumDist[i] + t * (routeCumDist[i + 1] - routeCumDist[i]);
+    }
+  }
+  return { distFromRoute: bestDist, cumDist: bestCum };
+}
+
+function getCurrentPace() {
+  if (gpsHistory.length < 2) return null;
+  const first = gpsHistory[0];
+  const last  = gpsHistory[gpsHistory.length - 1];
+  const timeSec = (last.time - first.time) / 1000;
+  if (timeSec < 6) return null;
+  let d = 0;
+  for (let i = 1; i < gpsHistory.length; i++) {
+    d += haversine(gpsHistory[i-1].lat, gpsHistory[i-1].lon, gpsHistory[i].lat, gpsHistory[i].lon);
+  }
+  if (d < 0.005) return null; // fermo
+  return (timeSec / 60) / d; // min/km
+}
+
+function startLiveRun() {
+  if (!navigator.geolocation) {
+    setLiveStatus('error', '⚠️ Il tuo browser non supporta la geolocalizzazione.');
+    return;
+  }
+  gpsHistory = [];
+  setLiveStatus('acquiring', '📡 Acquisizione segnale GPS…');
+  document.getElementById('btnStartRun').style.display = 'none';
+  document.getElementById('btnStopRun').style.display  = 'inline-block';
+  document.getElementById('liveStatsPanel').style.display = 'block';
+
+  liveWatchId = navigator.geolocation.watchPosition(onGPSUpdate, onGPSError, {
+    enableHighAccuracy: true,
+    maximumAge: 2000,
+    timeout: 15000
+  });
+}
+
+function stopLiveRun() {
+  if (liveWatchId !== null) {
+    navigator.geolocation.clearWatch(liveWatchId);
+    liveWatchId = null;
+  }
+  clearInterval(liveMapTimer);
+  liveMapTimer = null;
+  gpsHistory = [];
+  document.getElementById('btnStartRun').style.display = 'inline-block';
+  document.getElementById('btnStopRun').style.display  = 'none';
+  document.getElementById('liveStatsPanel').style.display = 'none';
+  document.getElementById('liveGpsStatus').style.display  = 'none';
+  // Ridisegna la mappa senza il dot
+  if (routeCoords.length > 1) drawMap(routeCoords, routeColor);
+}
+
+function onGPSUpdate(pos) {
+  const { latitude: lat, longitude: lon, accuracy } = pos.coords;
+  const now = pos.timestamp || Date.now();
+
+  // Mantieni finestra scorrevole di 45 secondi
+  gpsHistory.push({ lat, lon, time: now });
+  const cutoff = now - 45000;
+  while (gpsHistory.length > 1 && gpsHistory[0].time < cutoff) gpsHistory.shift();
+
+  setLiveStatus('active', `📍 GPS attivo · precisione ±${Math.round(accuracy)} m`);
+
+  // Posizione sul percorso
+  const { distFromRoute, cumDist } = nearestOnRoute(lat, lon);
+  const remaining = Math.max(0, routeTotalDist - cumDist);
+  const pct = routeTotalDist > 0 ? Math.min(100, (cumDist / routeTotalDist) * 100) : 0;
+
+  document.getElementById('lvDistCovered').textContent = fmtDist(cumDist);
+  document.getElementById('lvDistRemain').textContent  = fmtDist(remaining);
+  document.getElementById('lvProgress').textContent    = Math.round(pct) + '%';
+  document.getElementById('lvAccuracy').textContent    = '±' + Math.round(accuracy) + ' m';
+  document.getElementById('progressRouteFill').style.width = pct + '%';
+
+  // Passo attuale
+  const paceSecPerKm = getCurrentPace() ? getCurrentPace() * 60 : null;
+  document.getElementById('lvPaceCurrent').textContent = fmtPace(paceSecPerKm);
+
+  // Confronto con target
+  const target = PACE_TARGETS[liveDiffKey];
+  const fb = document.getElementById('paceFeedback');
+  if (paceSecPerKm && target) {
+    fb.style.display = 'block';
+    if (paceSecPerKm > target.max) {
+      fb.style.background = 'rgba(231,76,60,0.12)';
+      fb.style.color = '#e74c3c';
+      fb.textContent = '🔴 Troppo lento — aumenta il ritmo!';
+    } else if (paceSecPerKm < target.min) {
+      fb.style.background = 'rgba(52,152,219,0.12)';
+      fb.style.color = '#3498db';
+      fb.textContent = '🔵 Stai volando — ottimo!';
+    } else {
+      fb.style.background = 'rgba(46,204,113,0.10)';
+      fb.style.color = '#2ecc71';
+      fb.textContent = '🟢 Ritmo perfetto — continua così!';
+    }
+  }
+
+  // Aggiorna mappa con dot live
+  drawMap(routeCoords, routeColor, { lat, lon, accuracy });
+}
+
+function onGPSError(err) {
+  const msgs = {
+    1: '⛔ Permesso GPS negato. Consenti la posizione nelle impostazioni del browser.',
+    2: '📡 Segnale GPS non disponibile. Prova in un luogo aperto.',
+    3: '⏱️ Timeout GPS. Riprova.'
+  };
+  setLiveStatus('error', msgs[err.code] || '❌ Errore GPS sconosciuto.');
+}
+
+function setLiveStatus(type, msg) {
+  const el = document.getElementById('liveGpsStatus');
+  el.className = 'live-status ' + type;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ─── FILE HANDLING ────────────────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file) return;
+  if (!file.name.match(/\.(gpx|xml)$/i)) {
+    showError('Il file deve essere in formato GPX (.gpx). Esportalo da Strava → Opzioni → Esporta GPX.');
+    return;
+  }
+
+  showError('');
+  stopLiveRun();
+  analyzedSongs = []; pendingMusicFiles = []; currentPlayingIdx = null;
+  const ap = document.getElementById('audioPlayer'); if (ap) ap.pause();
+  document.getElementById('loader').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+  document.querySelector('.chart-section').style.display = '';
+  document.getElementById('mapSection').style.display = '';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = parseGPX(e.target.result);
+      document.getElementById('loader').style.display = 'none';
+      showResults(data);
+    } catch (err) {
+      document.getElementById('loader').style.display = 'none';
+      showError('Errore nella lettura del file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = msg ? 'block' : 'none';
+}
+
+// ─── EVENTS ──────────────────────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', e => {
+  handleFile(e.target.files[0]);
+});
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag');
+  handleFile(e.dataTransfer.files[0]);
+});
+</script>
 </body>
 </html>
