@@ -547,40 +547,51 @@
 
       <hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin-bottom:20px">
 
-      <!-- Local file analysis -->
+      <!-- Folder picker -->
       <div class="mymusic-drop" id="musicDropZone" onclick="document.getElementById('musicFileInput').click()">
-        <div style="font-size:2rem">🎵</div>
-        <strong>Trascina i tuoi file audio qui</strong>
-        <p>MP3 · AAC · OGG · WAV · FLAC · M4A — analisi BPM locale, nessun upload</p>
-        <input type="file" id="musicFileInput" accept="audio/*" multiple />
+        <div style="font-size:2.2rem">📂</div>
+        <strong>Seleziona la cartella con la tua musica</strong>
+        <p>Tutte le canzoni vengono analizzate in automatico · MP3 · AAC · OGG · WAV · FLAC · M4A</p>
+        <p style="margin-top:4px;color:#666;font-size:.78rem">Analisi BPM locale — nessun file viene caricato su internet</p>
+        <input type="file" id="musicFileInput" accept="audio/*" webkitdirectory />
       </div>
 
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()" disabled>Analizza BPM</button>
-        <span id="musicFileCount" style="font-size:.82rem;color:#888"></span>
-      </div>
+      <!-- Folder status bar -->
+      <div id="folderStatus" style="display:none;background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:.84rem;color:#aaa"></div>
 
       <div class="analysis-progress" id="analysisProgress">
-        <p id="analysisProgressLabel">Analisi…</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <p id="analysisProgressLabel" style="margin:0">Analisi…</p>
+          <button onclick="stopAnalysis()" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:.8rem">■ Interrompi</button>
+        </div>
         <div class="analysis-progress-bar"><div class="analysis-progress-fill" id="analysisProgressFill" style="width:0%"></div></div>
       </div>
 
       <div class="music-results" id="musicResults">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-          <span id="musicResultsSummary" style="font-size:.85rem;color:#aaa"></span>
-          <label style="font-size:.8rem;color:#888;display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="filterMatch" onchange="applyMusicFilter()" style="accent-color:var(--orange)">
-            Solo brani compatibili
-          </label>
+        <!-- Playlist compatibile -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <span id="musicResultsSummary" style="font-size:.88rem;color:#aaa"></span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-dl" id="btnDlLocalM3u" onclick="downloadLocalM3U(false)">⬇ Playlist compatibile .m3u</button>
+            <button class="btn-dl" onclick="downloadLocalM3U(true)">⬇ Tutte .m3u</button>
+          </div>
         </div>
+
+        <!-- Tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+          <button class="tab-btn active" id="tabCompat" onclick="switchMusicTab('compat', this)">✅ Compatibili <span id="compatCount"></span></button>
+          <button class="tab-btn" id="tabAll" onclick="switchMusicTab('all', this)">Tutte le canzoni <span id="allCount"></span></button>
+        </div>
+
         <div id="musicResultsList"></div>
+
         <div class="mini-player" id="miniPlayer">
           <button class="mr-play playing" id="miniPlayBtn" onclick="toggleMiniPlay()">⏸</button>
           <div class="mini-player-info">
             <div class="mpt" id="miniPlayerName">—</div>
             <div class="mpb" id="miniPlayerBpm">—</div>
           </div>
-          <audio id="audioPlayer" onended="onAudioEnded()"></audio>
+          <audio id="audioPlayer" onended="onAudioNextOrEnd()"></audio>
         </div>
       </div>
     </div>
@@ -1291,27 +1302,55 @@ async function analyzeBPM(file) {
 }
 
 // ── File input / drag & drop ──────────────────────────────────────────────────
+const AUDIO_EXTS = /\.(mp3|aac|ogg|wav|flac|m4a|wma|opus|aiff|ape)$/i;
+let analysisAborted = false;
+let musicViewTab = 'compat'; // 'compat' | 'all'
+
 document.addEventListener('DOMContentLoaded', () => {
-  const mDrop = document.getElementById('musicDropZone');
+  const mDrop  = document.getElementById('musicDropZone');
   const mInput = document.getElementById('musicFileInput');
   if (!mDrop || !mInput) return;
 
-  mInput.addEventListener('change', e => setMusicFiles([...e.target.files]));
+  mInput.addEventListener('change', e => {
+    const files = [...e.target.files].filter(f => AUDIO_EXTS.test(f.name));
+    setMusicFiles(files, e.target.files[0]?.webkitRelativePath?.split('/')[0] || '');
+  });
   mDrop.addEventListener('dragover', e => { e.preventDefault(); mDrop.classList.add('drag'); });
   mDrop.addEventListener('dragleave', () => mDrop.classList.remove('drag'));
   mDrop.addEventListener('drop', e => {
-    e.preventDefault();
-    mDrop.classList.remove('drag');
-    const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('audio/'));
-    setMusicFiles(files);
+    e.preventDefault(); mDrop.classList.remove('drag');
+    // Collect files from DataTransferItemList (supports folders in Chrome/Edge)
+    const items = [...(e.dataTransfer.items || [])];
+    const fileList = [];
+    let folderName = '';
+    const readEntry = (entry) => new Promise(res => {
+      if (entry.isFile) {
+        entry.file(f => {
+          if (AUDIO_EXTS.test(f.name)) fileList.push(f);
+          res();
+        });
+      } else if (entry.isDirectory) {
+        folderName = folderName || entry.name;
+        const reader = entry.createReader();
+        const readAll = () => reader.readEntries(entries => {
+          if (!entries.length) return res();
+          Promise.all(entries.map(readEntry)).then(readAll);
+        });
+        readAll();
+      } else res();
+    });
+    Promise.all(items.map(i => i.webkitGetAsEntry ? readEntry(i.webkitGetAsEntry()) : Promise.resolve()))
+      .then(() => setMusicFiles(fileList, folderName));
   });
 });
 
-function setMusicFiles(files) {
+function setMusicFiles(files, folderName) {
   pendingMusicFiles = files;
-  document.getElementById('musicFileCount').textContent =
-    files.length ? `${files.length} file selezionat${files.length > 1 ? 'i' : 'o'}` : '';
-  document.getElementById('btnAnalyze').disabled = files.length === 0;
+  const status = document.getElementById('folderStatus');
+  if (!files.length) { status.style.display = 'none'; return; }
+  status.style.display = 'block';
+  status.innerHTML = `📂 <strong>${folderName || 'Cartella'}</strong> · ${files.length} file audio trovati · analisi automatica in avvio…`;
+  startAnalysis();
 }
 
 // ── Analysis runner ───────────────────────────────────────────────────────────
@@ -1319,35 +1358,43 @@ async function startAnalysis() {
   if (!pendingMusicFiles.length) return;
   analyzedSongs = [];
   currentPlayingIdx = null;
+  analysisAborted = false;
 
   const prog  = document.getElementById('analysisProgress');
   const fill  = document.getElementById('analysisProgressFill');
   const label = document.getElementById('analysisProgressLabel');
-  const btn   = document.getElementById('btnAnalyze');
-  btn.disabled = true;
   prog.style.display = 'block';
   document.getElementById('musicResults').style.display = 'none';
 
   for (let i = 0; i < pendingMusicFiles.length; i++) {
+    if (analysisAborted) break;
     const file = pendingMusicFiles[i];
-    label.textContent = `Analisi ${i + 1}/${pendingMusicFiles.length}: ${file.name}`;
-    fill.style.width  = ((i / pendingMusicFiles.length) * 100) + '%';
+    const pct  = Math.round((i / pendingMusicFiles.length) * 100);
+    label.textContent = `Analisi ${i + 1}/${pendingMusicFiles.length}: ${file.name.replace(/\.[^.]+$/,'')}`;
+    fill.style.width  = pct + '%';
     try {
       const { bpm, duration } = await analyzeBPM(file);
-      analyzedSongs.push({ file, name: file.name, bpm, duration, url: URL.createObjectURL(file) });
+      analyzedSongs.push({ file, name: file.name, path: file.webkitRelativePath || file.name, bpm, duration, url: null });
     } catch {
-      analyzedSongs.push({ file, name: file.name, bpm: null, duration: null, url: URL.createObjectURL(file) });
+      analyzedSongs.push({ file, name: file.name, path: file.webkitRelativePath || file.name, bpm: null, duration: null, url: null });
     }
+    // Yield to browser every 5 files
+    if (i % 5 === 4) await new Promise(r => setTimeout(r, 0));
   }
 
   fill.style.width = '100%';
-  label.textContent = 'Analisi completata!';
-  setTimeout(() => { prog.style.display = 'none'; }, 800);
-  btn.disabled = false;
+  label.textContent = analysisAborted ? `Interrotta — ${analyzedSongs.length} brani analizzati` : 'Analisi completata!';
+  setTimeout(() => { prog.style.display = 'none'; }, 1000);
 
-  analyzedSongs.sort((a, b) => bpmMatch(b.bpm) - bpmMatch(a.bpm)); // matching first
+  // Sort: perfect match first, then close, then others; within group sort by BPM ascending
+  analyzedSongs.sort((a, b) => {
+    const dm = bpmMatch(b.bpm) - bpmMatch(a.bpm);
+    return dm !== 0 ? dm : (a.bpm || 999) - (b.bpm || 999);
+  });
   renderMusicResults();
 }
+
+function stopAnalysis() { analysisAborted = true; }
 
 function bpmMatch(bpm) {
   if (!bpm || !currentDiffKey) return 0;
@@ -1373,36 +1420,49 @@ function fmtSeconds(sec) {
   return Math.floor(sec / 60) + ':' + Math.round(sec % 60).toString().padStart(2, '0');
 }
 
-function renderMusicResults(filterOnly = false) {
-  const list = document.getElementById('musicResultsList');
-  const res  = document.getElementById('musicResults');
-  const songs = filterOnly
-    ? analyzedSongs.filter(s => bpmMatch(s.bpm) >= 2)
-    : analyzedSongs;
+function switchMusicTab(tab, btn) {
+  musicViewTab = tab;
+  document.querySelectorAll('#tabCompat,#tabAll').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMusicResults();
+}
 
+function renderMusicResults() {
   const matchCount = analyzedSongs.filter(s => bpmMatch(s.bpm) === 3).length;
   const closeCount = analyzedSongs.filter(s => bpmMatch(s.bpm) === 2).length;
+  const compatSongs = analyzedSongs.filter(s => bpmMatch(s.bpm) >= 2);
+
   document.getElementById('musicResultsSummary').textContent =
     `${analyzedSongs.length} brani analizzati · ✅ ${matchCount} nel range · ⚡ ${closeCount} vicini`;
+  document.getElementById('compatCount').textContent = `(${compatSongs.length})`;
+  document.getElementById('allCount').textContent    = `(${analyzedSongs.length})`;
 
-  list.innerHTML = songs.map((s, i) => {
-    const idx = analyzedSongs.indexOf(s);
-    const lbl = bpmLabel(s.bpm);
-    return `
-      <div class="music-result-row ${lbl.row}" id="mr-${idx}">
-        <button class="mr-play" id="mrBtn-${idx}" onclick="playLocalSong(${idx})" title="Riproduci">▶</button>
-        <span class="mr-name" title="${s.name}">${s.name.replace(/\.[^.]+$/, '')}</span>
-        <span class="mr-dur">${fmtSeconds(s.duration)}</span>
-        <span class="mr-bpm">${s.bpm ? s.bpm + ' BPM' : '—'}</span>
-        <span class="mr-badge badge-${lbl.cls}">${lbl.badge}</span>
-      </div>`;
-  }).join('');
-  res.style.display = 'block';
+  const songs = musicViewTab === 'compat' ? compatSongs : analyzedSongs;
+  const list  = document.getElementById('musicResultsList');
+
+  if (!songs.length) {
+    list.innerHTML = `<p style="color:#888;font-size:.85rem;padding:16px 0;text-align:center">
+      ${musicViewTab === 'compat' ? 'Nessun brano nel range BPM target. Prova la scheda "Tutte le canzoni".' : 'Nessun brano analizzato.'}
+    </p>`;
+  } else {
+    list.innerHTML = songs.map((s, pos) => {
+      const idx = analyzedSongs.indexOf(s);
+      const lbl = bpmLabel(s.bpm);
+      return `
+        <div class="music-result-row ${lbl.row}" id="mr-${idx}">
+          <span style="color:#666;font-size:.78rem;width:22px;text-align:right;flex-shrink:0">${pos + 1}</span>
+          <button class="mr-play" id="mrBtn-${idx}" onclick="playLocalSong(${idx})" title="Riproduci">▶</button>
+          <span class="mr-name" title="${s.path}">${s.name.replace(/\.[^.]+$/, '')}</span>
+          <span class="mr-dur">${fmtSeconds(s.duration)}</span>
+          <span class="mr-bpm">${s.bpm ? s.bpm + ' BPM' : '—'}</span>
+          <span class="mr-badge badge-${lbl.cls}">${lbl.badge}</span>
+        </div>`;
+    }).join('');
+  }
+  document.getElementById('musicResults').style.display = 'block';
 }
 
-function applyMusicFilter() {
-  renderMusicResults(document.getElementById('filterMatch').checked);
-}
+function applyMusicFilter() { renderMusicResults(); }
 
 // ── Mini audio player ─────────────────────────────────────────────────────────
 function playLocalSong(idx) {
@@ -1424,6 +1484,7 @@ function playLocalSong(idx) {
   }
 
   currentPlayingIdx = idx;
+  if (!song.url) song.url = URL.createObjectURL(song.file);
   player.src = song.url;
   player.play();
 
@@ -1444,12 +1505,43 @@ function toggleMiniPlay() {
   }
 }
 
-function onAudioEnded() {
-  if (currentPlayingIdx !== null) {
-    const btn = document.getElementById('mrBtn-' + currentPlayingIdx);
-    if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
+// Auto-advance to next compatible song when current ends
+function onAudioNextOrEnd() {
+  const pool = musicViewTab === 'compat'
+    ? analyzedSongs.filter(s => bpmMatch(s.bpm) >= 2)
+    : analyzedSongs;
+  const curSong = currentPlayingIdx !== null ? analyzedSongs[currentPlayingIdx] : null;
+  const curPos  = curSong ? pool.indexOf(curSong) : -1;
+  const next    = pool[curPos + 1];
+  if (next) {
+    playLocalSong(analyzedSongs.indexOf(next));
+  } else {
+    if (currentPlayingIdx !== null) {
+      const btn = document.getElementById('mrBtn-' + currentPlayingIdx);
+      if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
+    }
+    document.getElementById('miniPlayBtn').textContent = '▶';
+    currentPlayingIdx = null;
   }
-  document.getElementById('miniPlayBtn').textContent = '▶';
+}
+
+// Download local M3U (uses file paths from webkitRelativePath)
+function downloadLocalM3U(all) {
+  const pl    = PLAYLISTS[currentDiffKey];
+  const songs = all
+    ? analyzedSongs
+    : analyzedSongs.filter(s => bpmMatch(s.bpm) >= 2);
+  if (!songs.length) { alert('Nessun brano compatibile trovato.'); return; }
+
+  let m3u = '#EXTM3U\n';
+  m3u += `#PLAYLIST:${pl ? pl.label : 'Running'} — Strava Music Pacer\n`;
+  songs.forEach(s => {
+    const dur = s.duration ? Math.round(s.duration) : -1;
+    m3u += `#EXTINF:${dur},${s.name.replace(/\.[^.]+$/, '')}${s.bpm ? ' (' + s.bpm + ' BPM)' : ''}\n`;
+    m3u += s.path + '\n';
+  });
+  const label = pl ? pl.label.toLowerCase() : 'running';
+  triggerDownload(m3u, `playlist-${label}-locale.m3u`, 'audio/x-mpegurl');
 }
 
 // ─── LIVE RUN ─────────────────────────────────────────────────────────────────
