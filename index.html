@@ -71,7 +71,7 @@
     .btn-upload:hover { background: #e63900; transform: scale(1.03); }
 
     /* STATS CARDS */
-    #results { display: none; margin-top: 36px; }
+    #results { display: none; margin-top: 36px; flex-direction: column; }
 
     .stats-grid {
       display: grid;
@@ -154,27 +154,6 @@
     .map-legend i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; display: inline-block; flex-shrink: 0; }
 
     /* PLAYLIST SECTION */
-    .playlist-section {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 24px;
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    .playlist-section h3 {
-      font-size: 1rem;
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .playlist-section .subtitle { font-size: 0.82rem; color: #888; margin-bottom: 20px; }
-
-    .playlist-tabs {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
     .tab-btn {
       padding: 6px 16px;
       border-radius: 20px;
@@ -187,65 +166,6 @@
     }
     .tab-btn.active { background: var(--orange); border-color: var(--orange); color: white; font-weight: 600; }
     .tab-btn:hover:not(.active) { border-color: var(--orange); color: var(--orange); }
-
-    .playlist-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 12px;
-    }
-    .song-card {
-      background: rgba(255,255,255,0.04);
-      border-radius: 10px;
-      padding: 14px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border: 1px solid rgba(255,255,255,0.06);
-      text-decoration: none;
-      color: var(--text);
-      transition: background 0.2s, transform 0.15s;
-      cursor: pointer;
-    }
-    .song-card:hover { background: rgba(252,76,2,0.12); transform: translateY(-2px); border-color: rgba(252,76,2,0.3); }
-    .song-thumb {
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
-      object-fit: cover;
-      background: var(--card2);
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.4rem;
-    }
-    .song-info .title { font-size: 0.88rem; font-weight: 600; line-height: 1.3; }
-    .song-info .meta  { font-size: 0.75rem; color: #888; margin-top: 2px; }
-    .bpm-pill {
-      margin-left: auto;
-      flex-shrink: 0;
-      background: rgba(252,76,2,0.2);
-      color: var(--orange);
-      border-radius: 20px;
-      padding: 3px 10px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-
-    .yt-btn {
-      display: block;
-      margin-top: 20px;
-      text-align: center;
-      padding: 12px 28px;
-      background: #ff0000;
-      color: white;
-      border-radius: 30px;
-      font-weight: 600;
-      text-decoration: none;
-      font-size: 0.9rem;
-      transition: background 0.2s, transform 0.1s;
-    }
-    .yt-btn:hover { background: #cc0000; transform: scale(1.02); }
 
     /* LIVE RUN */
     .live-section {
@@ -325,20 +245,6 @@
       border-radius: 10px;
       margin-bottom: 16px;
     }
-    .live-music-btn {
-      display: block;
-      text-align: center;
-      padding: 14px;
-      background: linear-gradient(135deg, #ff0000, #cc0000);
-      color: white;
-      border-radius: 12px;
-      font-weight: 700;
-      text-decoration: none;
-      font-size: 1rem;
-      transition: opacity 0.2s, transform 0.1s;
-      letter-spacing: 0.02em;
-    }
-    .live-music-btn:hover { opacity: 0.88; transform: scale(1.01); }
     .live-dot { animation: pulse 1.2s ease-in-out infinite; }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
 
@@ -433,6 +339,46 @@
     }
     .btn-dl:hover { border-color: var(--orange); color: var(--orange); background: rgba(252,76,2,0.06); }
 
+    /* AUTO-DJ NOTIFICATION */
+    #autoDJNotif {
+      position: fixed;
+      bottom: 62px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 400;
+      background: rgba(12,16,36,0.97);
+      border: 1px solid rgba(252,76,2,0.5);
+      border-radius: 24px;
+      padding: 8px 18px;
+      font-size: .82rem;
+      color: #eee;
+      white-space: nowrap;
+      max-width: 92vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+    }
+
+    /* SEGMENT PANEL */
+    .segment-panel {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 28px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    @media (max-width: 768px) {
+      .segment-panel {
+        border-radius: 0;
+        margin-bottom: 0;
+        border-left: none;
+        border-right: none;
+        border-top: 1px solid rgba(255,255,255,0.05);
+      }
+    }
+
     /* ALERT */
     .error-box {
       background: rgba(231,76,60,0.12);
@@ -457,11 +403,116 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* RESPONSIVE */
-    @media (max-width: 500px) {
-      header h1 { font-size: 1.2rem; }
-      .stat-card .value { font-size: 1.4rem; }
-      .difficulty-section { flex-direction: column; text-align: center; }
+    /* ── MOBILE LAYOUT ── */
+    @media (max-width: 768px) {
+      /* Fixed slim header */
+      header {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 300;
+        padding: 10px 16px;
+        gap: 10px;
+      }
+      header svg { width: 26px; height: 26px; }
+      header h1  { font-size: 1rem; }
+      header p   { display: none; }
+
+      /* Push content below header + bottom ticker */
+      body { padding-top: 58px; padding-bottom: 56px; }
+      main { max-width: 100%; padding: 0; }
+
+      /* Upload zone */
+      .upload-zone { margin: 12px; padding: 32px 16px; }
+
+      /* Results as flex column — allows CSS order reordering */
+      #results { margin-top: 0; }
+
+      /* MAP: sticky below header, first in visual order */
+      .map-section {
+        order: -2;
+        position: sticky;
+        top: 58px;
+        z-index: 200;
+        border-radius: 0;
+        margin: 0;
+        padding: 10px 12px;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+      }
+      .map-section h3 { font-size: .78rem; margin-bottom: 8px; }
+      #routeMap { max-height: 210px; }
+
+      /* STATS: second slot */
+      .stats-grid {
+        order: -1;
+        grid-template-columns: repeat(2, 1fr);
+        padding: 12px;
+        gap: 10px;
+        margin-bottom: 0;
+      }
+      .stat-card { padding: 12px 10px; }
+      .stat-card .value { font-size: 1.3rem; }
+
+      /* Difficulty, chart, playlist, live, mymusic — full bleed */
+      .difficulty-section {
+        flex-direction: column;
+        text-align: center;
+        border-radius: 0;
+        margin-bottom: 0;
+        border-left: none;
+        border-right: none;
+        padding: 16px 12px;
+      }
+      .chart-section,
+      .playlist-section,
+      .live-section,
+      .mymusic-section {
+        border-radius: 0;
+        margin-bottom: 0;
+        border-left: none;
+        border-right: none;
+        border-top: 1px solid rgba(255,255,255,0.05);
+      }
+
+      /* Playlist & live grids */
+      .playlist-grid { grid-template-columns: 1fr; }
+      .live-grid { grid-template-columns: repeat(2, 1fr); }
+
+      /* ── Bottom ticker bar ── */
+      #mobileTicker {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        z-index: 300;
+        height: 48px;
+        background: rgba(8, 8, 20, 0.97);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-top: 1px solid rgba(252,76,2,0.4);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+      }
+      #mobileTickerTrack {
+        display: inline-flex;
+        white-space: nowrap;
+        animation: mTickerScroll 28s linear infinite;
+        will-change: transform;
+      }
+      #mobileTickerTrack span {
+        font-size: .82rem;
+        color: #ccc;
+        padding-right: 80px;
+      }
+      @keyframes mTickerScroll {
+        from { transform: translateX(0); }
+        to   { transform: translateX(-50%); }
+      }
+    }
+    /* Hide ticker on desktop */
+    @media (min-width: 769px) {
+      #mobileTicker { display: none !important; }
     }
   </style>
 </head>
@@ -511,6 +562,8 @@
       <canvas id="elevChart"></canvas>
     </div>
 
+    <div class="segment-panel" id="segmentPanel" style="display:none"></div>
+
     <div class="map-section" id="mapSection">
       <h3>&#128205; Percorso su mappa</h3>
       <canvas id="routeMap"></canvas>
@@ -518,15 +571,6 @@
         <span><i style="background:#2ecc71"></i> Partenza</span>
         <span><i id="endDotColor" style="background:var(--orange)"></i> Arrivo</span>
       </div>
-    </div>
-
-    <div class="playlist-section">
-      <h3>🎵 Playlist consigliata</h3>
-      <p class="subtitle" id="playlistSubtitle"></p>
-
-      <div class="playlist-tabs" id="playlistTabs"></div>
-      <div class="playlist-grid" id="playlistGrid"></div>
-      <a id="ytMainLink" class="yt-btn" href="#" target="_blank" rel="noopener">▶ Apri playlist completa su YouTube</a>
     </div>
 
     <!-- MY MUSIC -->
@@ -538,14 +582,6 @@
           <div style="font-size:0.82rem;color:#888;margin-top:2px">Analizza i tuoi file audio · rileva il BPM · vedi quali corrispondono al percorso</div>
         </div>
       </div>
-
-      <!-- Download playlist -->
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 20px">
-        <button class="btn-dl" onclick="downloadM3U()">⬇ Scarica playlist .m3u <span style="color:#888;font-size:.75rem">(VLC)</span></button>
-        <button class="btn-dl" onclick="downloadTXT()">⬇ Lista brani .txt</button>
-      </div>
-
-      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin-bottom:20px">
 
       <!-- Folder / file picker -->
       <div class="mymusic-drop" id="musicDropZone">
@@ -605,10 +641,14 @@
     <div class="live-section" id="liveSection" style="display:none">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
         <span style="font-size:2rem">🏃</span>
-        <div>
+        <div style="flex:1">
           <div style="font-size:1rem;font-weight:700">Modalità Corsa Live</div>
           <div style="font-size:0.82rem;color:#888;margin-top:2px">GPS in tempo reale · posizione sul percorso · passo attuale vs target</div>
         </div>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:.8rem;color:#aaa;flex-shrink:0">
+          <input type="checkbox" id="autoDJToggle" checked onchange="autoDJEnabled=this.checked;lastAutoBPM=null" style="accent-color:var(--orange);width:14px;height:14px">
+          Auto-DJ
+        </label>
       </div>
 
       <div id="liveGpsStatus" class="live-status" style="display:none"></div>
@@ -629,8 +669,6 @@
         </div>
         <div class="progress-route-wrap"><div class="progress-route-fill" id="progressRouteFill" style="width:0%"></div></div>
         <div class="pace-feedback" id="paceFeedback" style="display:none"></div>
-        <a id="liveMusicBtn" class="live-music-btn" href="#" target="_blank" rel="noopener">🎵 Apri la Playlist su YouTube</a>
-        <p style="font-size:0.75rem;color:#555;margin-top:10px;text-align:center">💡 Apri YouTube in un'altra scheda, metti la playlist in riproduzione e inizia a correre</p>
       </div>
     </div>
 
@@ -638,138 +676,12 @@
 </main>
 
 <script>
-// ─── PLAYLIST DATA ────────────────────────────────────────────────────────────
+// ─── DIFFICULTY CONFIG ─────────────────────────────────────────────────────────
 const PLAYLISTS = {
-  easy: {
-    label: "Facile",
-    color: "#2ecc71",
-    icon: "🟢",
-    bpmRange: "120–140 BPM",
-    desc: "Ritmo rilassato e costante. Canzoni energiche ma non frenetiche per mantenere un passo aerobico confortevole.",
-    ytSearch: "https://www.youtube.com/results?search_query=running+playlist+120+130+bpm+easy+jog",
-    ytPlaylist: "https://www.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI",
-    tabs: ["Pop", "Indie", "Elettronica"],
-    songs: {
-      "Pop": [
-        { title: "Levitating", artist: "Dua Lipa", bpm: 103, yt: "https://www.youtube.com/watch?v=TUVcZfQe-Kw" },
-        { title: "Blinding Lights", artist: "The Weeknd", bpm: 171, yt: "https://www.youtube.com/watch?v=4NRXx6U8ABQ" },
-        { title: "As It Was", artist: "Harry Styles", bpm: 174, yt: "https://www.youtube.com/watch?v=H5v3kku4y6Q" },
-        { title: "Don't Start Now", artist: "Dua Lipa", bpm: 124, yt: "https://www.youtube.com/watch?v=oygrmJFKYZY" },
-        { title: "Watermelon Sugar", artist: "Harry Styles", bpm: 95, yt: "https://www.youtube.com/watch?v=E07s5ZYygMg" },
-        { title: "Good 4 U", artist: "Olivia Rodrigo", bpm: 166, yt: "https://www.youtube.com/watch?v=gNi_6U5Pm_o" }
-      ],
-      "Indie": [
-        { title: "Electric Feel", artist: "MGMT", bpm: 113, yt: "https://www.youtube.com/watch?v=MmZexg8sxyk" },
-        { title: "Take It Easy", artist: "Eagles", bpm: 140, yt: "https://www.youtube.com/watch?v=AkOkAOkzxKs" },
-        { title: "Dog Days Are Over", artist: "Florence + Machine", bpm: 181, yt: "https://www.youtube.com/watch?v=iWOyfLBYtuU" },
-        { title: "Young Folks", artist: "Peter Bjorn and John", bpm: 110, yt: "https://www.youtube.com/watch?v=vFrjMq4aL-g" },
-        { title: "Mr. Brightside", artist: "The Killers", bpm: 148, yt: "https://www.youtube.com/watch?v=gGdGFtwCNBE" }
-      ],
-      "Elettronica": [
-        { title: "Midnight City", artist: "M83", bpm: 105, yt: "https://www.youtube.com/watch?v=dX3k_QDnzHE" },
-        { title: "Outro", artist: "M83", bpm: 78, yt: "https://www.youtube.com/watch?v=V7yDbEMqH-s" },
-        { title: "You & Me (Flume Remix)", artist: "Disclosure", bpm: 128, yt: "https://www.youtube.com/watch?v=hoc_IyJTRI8" },
-        { title: "Lean On", artist: "Major Lazer", bpm: 98, yt: "https://www.youtube.com/watch?v=YqeW9_5kURI" }
-      ]
-    }
-  },
-  medium: {
-    label: "Moderato",
-    color: "#f39c12",
-    icon: "🟡",
-    bpmRange: "140–165 BPM",
-    desc: "Ritmo sostenuto. La musica ti aiuta a mantenere la cadenza ottimale (170–175 passi/min) e spingere nei tratti pianeggianti.",
-    ytSearch: "https://www.youtube.com/results?search_query=running+playlist+150+160+bpm+workout",
-    ytPlaylist: "https://www.youtube.com/playlist?list=PLFgquLnL59akA9TC1_NvHFDgDWKmX08Y0",
-    tabs: ["Rock", "Hip-Hop", "EDM"],
-    songs: {
-      "Rock": [
-        { title: "Eye of the Tiger", artist: "Survivor", bpm: 109, yt: "https://www.youtube.com/watch?v=btPJPFnesV4" },
-        { title: "Thunderstruck", artist: "AC/DC", bpm: 134, yt: "https://www.youtube.com/watch?v=v2AC41dglnM" },
-        { title: "Don't Stop Me Now", artist: "Queen", bpm: 156, yt: "https://www.youtube.com/watch?v=HgzGwKwLmgM" },
-        { title: "All I Do Is Win", artist: "DJ Khaled", bpm: 80, yt: "https://www.youtube.com/watch?v=GGXzlMMISzA" },
-        { title: "Bohemian Rhapsody", artist: "Queen", bpm: 72, yt: "https://www.youtube.com/watch?v=fJ9rUzIMcZQ" },
-        { title: "Welcome to the Jungle", artist: "Guns N' Roses", bpm: 122, yt: "https://www.youtube.com/watch?v=o1tj2zJ2Wvg" }
-      ],
-      "Hip-Hop": [
-        { title: "HUMBLE.", artist: "Kendrick Lamar", bpm: 150, yt: "https://www.youtube.com/watch?v=tvTRZJ-4EyI" },
-        { title: "Stronger", artist: "Kanye West", bpm: 104, yt: "https://www.youtube.com/watch?v=PsO6ZnUZI0g" },
-        { title: "Power", artist: "Kanye West", bpm: 90, yt: "https://www.youtube.com/watch?v=L53gjP-TtGE" },
-        { title: "Sicko Mode", artist: "Travis Scott", bpm: 155, yt: "https://www.youtube.com/watch?v=6ONRf7h3Mdk" },
-        { title: "God's Plan", artist: "Drake", bpm: 77, yt: "https://www.youtube.com/watch?v=xpVfcZ0ZcFM" }
-      ],
-      "EDM": [
-        { title: "Levels", artist: "Avicii", bpm: 126, yt: "https://www.youtube.com/watch?v=_ovdm2yX4MA" },
-        { title: "Wake Me Up", artist: "Avicii", bpm: 124, yt: "https://www.youtube.com/watch?v=IcrbM1l_BoI" },
-        { title: "Clarity", artist: "Zedd ft. Foxes", bpm: 128, yt: "https://www.youtube.com/watch?v=IxxstCcJlsc" },
-        { title: "Animals", artist: "Martin Garrix", bpm: 128, yt: "https://www.youtube.com/watch?v=gCYcHz2k5x0" },
-        { title: "Titanium", artist: "David Guetta ft. Sia", bpm: 126, yt: "https://www.youtube.com/watch?v=JRfuAukYTKg" }
-      ]
-    }
-  },
-  hard: {
-    label: "Difficile",
-    color: "#e74c3c",
-    icon: "🔴",
-    bpmRange: "165–180 BPM",
-    desc: "Percorso impegnativo. Musica ad alta energia per alimentare lo sprint, superare i momenti di fatica e conquistare le salite.",
-    ytSearch: "https://www.youtube.com/results?search_query=intense+running+playlist+170+bpm+hard+workout",
-    ytPlaylist: "https://www.youtube.com/playlist?list=PLFgquLnL59akNLnBoRiGXQOjhMGRBvPLf",
-    tabs: ["Metal", "Trap", "Techno"],
-    songs: {
-      "Metal": [
-        { title: "Enter Sandman", artist: "Metallica", bpm: 123, yt: "https://www.youtube.com/watch?v=CD-E-LDc384" },
-        { title: "Run to the Hills", artist: "Iron Maiden", bpm: 170, yt: "https://www.youtube.com/watch?v=SpEHNKRjEZ0" },
-        { title: "Master of Puppets", artist: "Metallica", bpm: 220, yt: "https://www.youtube.com/watch?v=E0ozmU9cJDg" },
-        { title: "War Pigs", artist: "Black Sabbath", bpm: 83, yt: "https://www.youtube.com/watch?v=LQUXuQ6BFNU" },
-        { title: "Back in Black", artist: "AC/DC", bpm: 93, yt: "https://www.youtube.com/watch?v=pAgnJDJN4VA" }
-      ],
-      "Trap": [
-        { title: "DNA.", artist: "Kendrick Lamar", bpm: 138, yt: "https://www.youtube.com/watch?v=NLZRYQMLDW4" },
-        { title: "Bad and Boujee", artist: "Migos", bpm: 130, yt: "https://www.youtube.com/watch?v=BI3YH0SIOCE" },
-        { title: "Antidote", artist: "Travis Scott", bpm: 130, yt: "https://www.youtube.com/watch?v=naf5EOlhXqA" },
-        { title: "XO Tour Llif3", artist: "Lil Uzi Vert", bpm: 123, yt: "https://www.youtube.com/watch?v=WrsFXgW5Rew" },
-        { title: "mo bamba", artist: "Sheck Wes", bpm: 73, yt: "https://www.youtube.com/watch?v=wSDNm8WVSL0" }
-      ],
-      "Techno": [
-        { title: "Blue (Da Ba Dee)", artist: "Eiffel 65 (techno remix)", bpm: 138, yt: "https://www.youtube.com/results?search_query=blue+da+ba+dee+techno+remix+running" },
-        { title: "Sandstorm", artist: "Darude", bpm: 136, yt: "https://www.youtube.com/watch?v=y6120QOlsfU" },
-        { title: "The Age of Love", artist: "Charlotte de Witte", bpm: 140, yt: "https://www.youtube.com/watch?v=9NKGZZ14h98" },
-        { title: "Insomnia", artist: "Faithless", bpm: 138, yt: "https://www.youtube.com/watch?v=5fQ3MNmGwKo" }
-      ]
-    }
-  },
-  vhard: {
-    label: "Estremo",
-    color: "#8e44ad",
-    icon: "🟣",
-    bpmRange: "180–200+ BPM",
-    desc: "Percorso estremamente impegnativo. Musica al massimo dell'intensità per spingere oltre i tuoi limiti e non mollare mai.",
-    ytSearch: "https://www.youtube.com/results?search_query=extreme+workout+running+playlist+180+200+bpm",
-    ytPlaylist: "https://www.youtube.com/playlist?list=PLFgquLnL59al7NnB3GQFMTOlmLkJh0BoX",
-    tabs: ["Metal Estremo", "Dubstep", "Drum & Bass"],
-    songs: {
-      "Metal Estremo": [
-        { title: "Duality", artist: "Slipknot", bpm: 124, yt: "https://www.youtube.com/watch?v=0dFBl_JNkZw" },
-        { title: "Before I Forget", artist: "Slipknot", bpm: 171, yt: "https://www.youtube.com/watch?v=3GRj9P9N0SM" },
-        { title: "Body Count", artist: "Body Count", bpm: 140, yt: "https://www.youtube.com/watch?v=sSmLsNfRm_E" },
-        { title: "Chop Suey!", artist: "System of a Down", bpm: 192, yt: "https://www.youtube.com/watch?v=CSvFpBOe8eY" },
-        { title: "B.Y.O.B.", artist: "System of a Down", bpm: 180, yt: "https://www.youtube.com/watch?v=qBXqNlq_dOA" }
-      ],
-      "Dubstep": [
-        { title: "Scary Monsters and Nice Sprites", artist: "Skrillex", bpm: 140, yt: "https://www.youtube.com/watch?v=WSeNSzJ2-Jw" },
-        { title: "Bangarang", artist: "Skrillex", bpm: 110, yt: "https://www.youtube.com/watch?v=YJVmu6yttiw" },
-        { title: "Monster", artist: "Skrillex & Diplo", bpm: 140, yt: "https://www.youtube.com/watch?v=KGR5H3Fc7ZA" },
-        { title: "Bass Cannon", artist: "Flux Pavilion", bpm: 140, yt: "https://www.youtube.com/watch?v=lDnorFhU7YE" }
-      ],
-      "Drum & Bass": [
-        { title: "Reprogrammed to Hate", artist: "Noisia", bpm: 174, yt: "https://www.youtube.com/watch?v=pHj2-5KXKKE" },
-        { title: "Machine Gun", artist: "Noisia", bpm: 174, yt: "https://www.youtube.com/watch?v=0q0VVbFVRIE" },
-        { title: "Run", artist: "Chase & Status ft. Delilah", bpm: 174, yt: "https://www.youtube.com/watch?v=K2LKQmPTEkc" },
-        { title: "Jungle", artist: "Drake", bpm: 150, yt: "https://www.youtube.com/watch?v=dqIgjigIjkM" }
-      ]
-    }
-  }
+  easy:   { label: 'Facile',    color: '#2ecc71', icon: '🟢', bpmRange: '120–145 BPM' },
+  medium: { label: 'Moderato',  color: '#f39c12', icon: '🟡', bpmRange: '145–165 BPM' },
+  hard:   { label: 'Difficile', color: '#e74c3c', icon: '🔴', bpmRange: '165–180 BPM' },
+  vhard:  { label: 'Estremo',   color: '#8e44ad', icon: '🟣', bpmRange: '180–200 BPM' },
 };
 
 // ─── GPX PARSER ──────────────────────────────────────────────────────────────
@@ -785,7 +697,7 @@ function parseGPX(text) {
   const MOVING_THRESHOLD_MS = 0.5; // 0.5 m/s ≈ 1.8 km/h
 
   let dist = 0, elevGain = 0, elevLoss = 0, movingTimeSec = 0;
-  const elevations = [], coords = [];
+  const elevations = [], coords = [], coordEles = [];
   let prevLat, prevLon, prevEle, prevTime, startTime, endTime;
 
   trkpts.forEach((pt, i) => {
@@ -827,6 +739,7 @@ function parseGPX(text) {
     prevLat = lat; prevLon = lon;
     if (t) prevTime = t;
     coords.push([lat, lon]);
+    coordEles.push(ele); // null if no elevation data for this point
   });
 
   const durationMs = (startTime && endTime) ? (endTime - startTime) : null;
@@ -836,7 +749,7 @@ function parseGPX(text) {
   const paceBaseMin = movingTimeMin || durationMin;
   const avgPaceSecPerKm = (paceBaseMin && dist > 0) ? (paceBaseMin * 60) / dist : null;
 
-  return { dist, elevGain, elevLoss, elevations, coords, durationMin, movingTimeMin, avgPaceSecPerKm };
+  return { dist, elevGain, elevLoss, elevations, coords, coordEles, durationMin, movingTimeMin, avgPaceSecPerKm };
 }
 
 function haversine(lat1, lon1, lat2, lon2) {
@@ -848,7 +761,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 // ─── MAP (canvas self-contained, no external deps) ───────────────────────────
-function drawMap(coords, routeColor, livePos) {
+function drawMap(coords, routeColor, livePos, segments) {
   const section = document.getElementById('mapSection');
   // Sostituisci il canvas ad ogni caricamento
   let canvas = document.getElementById('routeMap');
@@ -953,6 +866,22 @@ function drawMap(coords, routeColor, livePos) {
   }
   drawDot(coords[0][0], coords[0][1], '#2ecc71', '▶ Start');
   drawDot(coords[coords.length-1][0], coords[coords.length-1][1], routeColor, '⬛ Fine');
+
+  // ── Marcatori cambio segmento ──
+  if (segments && segments.length > 1) {
+    segments.slice(1).forEach(seg => {
+      const [lat, lon] = coords[seg.startIdx];
+      const [px, py]   = project([lat, lon]);
+      const info       = segmentInfo(seg.gradient);
+      ctx.beginPath();
+      ctx.arc(px, py, 5, 0, Math.PI * 2);
+      ctx.fillStyle   = info.color;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+    });
+  }
 
   // ── Posizione live (GPS) ──
   if (livePos) {
@@ -1101,42 +1030,6 @@ function fmtDur(min) {
   return h > 0 ? h + 'h ' + m + 'min' : m + ' min';
 }
 
-let currentTabSongs = null;
-
-function renderPlaylist(key, tabIndex) {
-  const pl = PLAYLISTS[key];
-  const tabName = pl.tabs[tabIndex];
-  const songs = pl.songs[tabName];
-  currentTabSongs = songs;
-
-  const grid = document.getElementById('playlistGrid');
-  grid.innerHTML = songs.map(s => `
-    <a class="song-card" href="${s.yt}" target="_blank" rel="noopener">
-      <div class="song-thumb">🎵</div>
-      <div class="song-info">
-        <div class="title">${s.title}</div>
-        <div class="meta">${s.artist}</div>
-      </div>
-      <span class="bpm-pill">${s.bpm} BPM</span>
-    </a>
-  `).join('');
-}
-
-function renderTabs(key) {
-  const pl = PLAYLISTS[key];
-  const tabs = document.getElementById('playlistTabs');
-  tabs.innerHTML = pl.tabs.map((t, i) => `
-    <button class="tab-btn${i === 0 ? ' active' : ''}" data-idx="${i}" onclick="switchTab('${key}', this)">${t}</button>
-  `).join('');
-  renderPlaylist(key, 0);
-}
-
-function switchTab(key, btn) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderPlaylist(key, parseInt(btn.dataset.idx));
-}
-
 // ─── MAIN RENDER ─────────────────────────────────────────────────────────────
 function showResults(data) {
   const { dist, elevGain, elevLoss, elevations, coords, durationMin, movingTimeMin, avgPaceSecPerKm } = data;
@@ -1166,7 +1059,7 @@ function showResults(data) {
   badge.style.background = pl.color + '22';
   badge.style.color = pl.color;
   badge.style.border = '1px solid ' + pl.color + '55';
-  document.getElementById('diffDesc').textContent = pl.desc;
+  document.getElementById('diffDesc').textContent = `🎵 BPM target: ${pl.bpmRange} — carica la tua musica qui sotto`;
   const bar = document.getElementById('diffBar');
   bar.style.background = pl.color;
   setTimeout(() => { bar.style.width = diff.pct + '%'; }, 80);
@@ -1181,35 +1074,30 @@ function showResults(data) {
   // Map
   if (coords.length > 1) {
     document.getElementById('endDotColor').style.background = pl.color;
-    setTimeout(() => drawMap(coords, pl.color), 50);
+    setTimeout(() => drawMap(coords, pl.color, null, routeSegments), 50);
   } else {
     document.getElementById('mapSection').style.display = 'none';
   }
 
-  // Playlist
-  document.getElementById('playlistSubtitle').textContent =
-    `Difficoltà ${pl.label.toLowerCase()} rilevata — BPM consigliati: ${pl.bpmRange}`;
-  renderTabs(diff.key);
-  document.getElementById('ytMainLink').href = pl.ytPlaylist;
-  document.getElementById('ytMainLink').textContent = `▶ Apri playlist "${pl.label}" su YouTube`;
-
   // Live run — inizializza stato globale
-  routeCoords    = coords;
-  routeCumDist   = buildCumDist(coords);
-  routeTotalDist = dist;
-  routeColor     = pl.color;
+  routeCoords      = coords;
+  routeCumDist     = buildCumDist(coords);
+  routeTotalDist   = dist;
+  routeColor       = pl.color;
+  routeElevations  = data.coordEles || [];
+  routeSegments    = buildRouteSegments(coords, routeElevations, routeCumDist);
+  renderSegmentPanel(routeSegments);
   liveDiffKey    = diff.key;
   currentDiffKey = diff.key;
   const target   = PACE_TARGETS[diff.key];
   document.getElementById('lvPaceTarget').textContent =
     fmtPace(target.min) + '–' + fmtPace(target.max);
-  document.getElementById('liveMusicBtn').href = pl.ytPlaylist;
-  document.getElementById('liveMusicBtn').textContent = `🎵 Playlist "${pl.label}" su YouTube (${pl.bpmRange})`;
   document.getElementById('liveSection').style.display    = 'block';
   document.getElementById('myMusicSection').style.display = 'block';
 
-  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').style.display = 'flex';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+  updateTicker();
 }
 
 // ─── MY MUSIC ─────────────────────────────────────────────────────────────────
@@ -1217,35 +1105,6 @@ let pendingMusicFiles = [];
 let analyzedSongs     = [];
 let currentDiffKey    = null;
 let currentPlayingIdx = null;
-
-// ── Download helpers ──────────────────────────────────────────────────────────
-function getAllSongsForDiff(key) {
-  const pl = PLAYLISTS[key];
-  return pl.tabs.flatMap(tab => pl.songs[tab]);
-}
-
-function downloadM3U() {
-  if (!currentDiffKey) return;
-  const songs = getAllSongsForDiff(currentDiffKey);
-  const pl    = PLAYLISTS[currentDiffKey];
-  let text = '#EXTM3U\n';
-  songs.forEach(s => {
-    text += `#EXTINF:0,${s.title} - ${s.artist} (${s.bpm} BPM)\n${s.yt}\n`;
-  });
-  triggerDownload(text, `playlist-${pl.label.toLowerCase()}.m3u`, 'audio/x-mpegurl');
-}
-
-function downloadTXT() {
-  if (!currentDiffKey) return;
-  const songs = getAllSongsForDiff(currentDiffKey);
-  const pl    = PLAYLISTS[currentDiffKey];
-  let text = `Playlist: ${pl.label} — ${pl.bpmRange}\n`;
-  text += `Generata da Strava Music Pacer\n${'─'.repeat(50)}\n\n`;
-  songs.forEach((s, i) => {
-    text += `${i + 1}. ${s.title} — ${s.artist}\n   BPM: ${s.bpm} | ${s.yt}\n\n`;
-  });
-  triggerDownload(text, `playlist-${pl.label.toLowerCase()}.txt`, 'text/plain');
-}
 
 function triggerDownload(content, filename, mime) {
   const blob = new Blob([content], { type: mime });
@@ -1473,6 +1332,8 @@ function renderMusicResults() {
     }).join('');
   }
   document.getElementById('musicResults').style.display = 'block';
+  if (routeSegments.length) renderSegmentPanel(routeSegments);
+  updateTicker();
 }
 
 function applyMusicFilter() { renderMusicResults(); }
@@ -1558,14 +1419,18 @@ function downloadLocalM3U(all) {
 }
 
 // ─── LIVE RUN ─────────────────────────────────────────────────────────────────
-let routeCoords    = [];
-let routeCumDist   = []; // km cumulativi per ogni punto
-let routeTotalDist = 0;
-let routeColor     = '#fc4c02';
-let liveDiffKey    = null;
-let liveWatchId    = null;
-let gpsHistory     = []; // { lat, lon, time }
-let liveMapTimer   = null;
+let routeCoords      = [];
+let routeCumDist     = []; // km cumulativi per ogni punto
+let routeTotalDist   = 0;
+let routeColor       = '#fc4c02';
+let liveDiffKey      = null;
+let liveWatchId      = null;
+let gpsHistory       = []; // { lat, lon, time }
+let liveMapTimer     = null;
+let routeElevations  = []; // elevation per coord (null = no data)
+let routeSegments    = []; // pre-computed gradient segments
+let autoDJEnabled    = true;
+let lastAutoBPM      = null;
 
 const PACE_TARGETS = {
   easy:   { min: 390, max: 450 }, // sec/km  6:30–7:30
@@ -1580,6 +1445,143 @@ function buildCumDist(coords) {
     cum.push(cum[i - 1] + haversine(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]));
   }
   return cum;
+}
+
+// ─── ROUTE SEGMENTS & AUTO-DJ ────────────────────────────────────────────────
+// Converts running pace (sec/km) to target cadence BPM via linear interpolation
+function paceToBPM(paceSecPerKm) {
+  const breaks = [[450,120],[390,145],[300,165],[240,180],[180,200]];
+  if (paceSecPerKm >= 450) return 120;
+  if (paceSecPerKm <= 180) return 200;
+  for (let i = 0; i < breaks.length - 1; i++) {
+    const [p1,b1] = breaks[i], [p2,b2] = breaks[i+1];
+    if (paceSecPerKm <= p1 && paceSecPerKm >= p2)
+      return Math.round(b1 + ((p1 - paceSecPerKm) / (p1 - p2)) * (b2 - b1));
+  }
+  return 150;
+}
+
+// Automatically selects the best-matching song from the library for current pace
+function autoSelectSong(paceSecPerKm) {
+  if (!autoDJEnabled || !analyzedSongs.length || !paceSecPerKm) return;
+  const targetBPM = paceToBPM(paceSecPerKm);
+  // Avoid rapid switching: ignore if BPM target barely changed
+  if (lastAutoBPM !== null && Math.abs(targetBPM - lastAutoBPM) < 10) return;
+  // Also skip if current song is already close enough
+  if (currentPlayingIdx !== null) {
+    const cur = analyzedSongs[currentPlayingIdx];
+    if (cur.bpm && Math.abs(cur.bpm - targetBPM) <= 8) { lastAutoBPM = targetBPM; return; }
+  }
+  lastAutoBPM = targetBPM;
+  const pool = analyzedSongs.filter(s => s.bpm);
+  if (!pool.length) return;
+  const best = pool.reduce((a, b) => Math.abs(a.bpm - targetBPM) <= Math.abs(b.bpm - targetBPM) ? a : b);
+  const idx  = analyzedSongs.indexOf(best);
+  if (idx !== currentPlayingIdx) {
+    playLocalSong(idx);
+    showAutoDJNotif(best.name.replace(/\.[^.]+$/, ''), best.bpm, targetBPM);
+  }
+}
+
+function showAutoDJNotif(name, bpm, targetBPM) {
+  const el = document.getElementById('autoDJNotif');
+  if (!el) return;
+  el.textContent = `🎵 Auto-DJ → "${name}" · ${bpm} BPM  (target: ${targetBPM} BPM)`;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 4500);
+}
+
+// Returns display info and BPM recommendation for a given gradient %
+function segmentInfo(gradient) {
+  if (gradient > 10)   return { label: '⛰️ Salita ripida',  bpmMin:170, bpmMax:185, color:'#e74c3c' };
+  if (gradient > 5)    return { label: '↗️ Salita',          bpmMin:162, bpmMax:178, color:'#e67e22' };
+  if (gradient > 2)    return { label: '↗ Salita leggera',  bpmMin:155, bpmMax:170, color:'#f39c12' };
+  if (gradient >= -2)  return { label: '➡️ Pianura',         bpmMin:150, bpmMax:175, color:'#2ecc71' };
+  if (gradient >= -5)  return { label: '↘ Discesa leggera', bpmMin:155, bpmMax:168, color:'#3498db' };
+  if (gradient >= -10) return { label: '↘️ Discesa',         bpmMin:160, bpmMax:172, color:'#2980b9' };
+  return               { label: '⬇️ Discesa ripida',        bpmMin:165, bpmMax:178, color:'#8e44ad' };
+}
+
+// Returns the best song from the library for a given BPM range
+function bestSongForSegment(bpmMin, bpmMax) {
+  if (!analyzedSongs.length) return null;
+  const pool = analyzedSongs.filter(s => s.bpm);
+  if (!pool.length) return null;
+  const inRange = pool.filter(s => s.bpm >= bpmMin && s.bpm <= bpmMax);
+  const src = inRange.length ? inRange : pool;
+  const mid = (bpmMin + bpmMax) / 2;
+  return src.reduce((a, b) => Math.abs(a.bpm - mid) <= Math.abs(b.bpm - mid) ? a : b);
+}
+
+// Divides the route into ~18 gradient segments
+function buildRouteSegments(coords, coordEles, cumDist) {
+  if (coords.length < 4) return [];
+  const n    = coords.length;
+  const step = Math.max(3, Math.round(n / 18));
+  const segs = [];
+  for (let i = 0; i < n - 1; i += step) {
+    const end = Math.min(i + step, n - 1);
+    let eleStart = null, eleEnd = null;
+    for (let j = i;   j <= end; j++) { if (coordEles[j] != null) { eleStart = coordEles[j]; break; } }
+    for (let j = end; j >= i;   j--) { if (coordEles[j] != null) { eleEnd   = coordEles[j]; break; } }
+    const elevDiff = (eleStart != null && eleEnd != null) ? eleEnd - eleStart : 0;
+    const segDist  = (cumDist[end] || 0) - (cumDist[i] || 0);
+    const gradient = segDist > 0.001 ? (elevDiff / (segDist * 1000)) * 100 : 0;
+    segs.push({
+      startIdx: i, endIdx: end,
+      cumStart: cumDist[i]  || 0,
+      cumEnd:   cumDist[end] || 0,
+      gradient: Math.round(gradient * 10) / 10,
+      elevDiff: Math.round(elevDiff)
+    });
+  }
+  return segs;
+}
+
+// Renders the route-segment panel with gradient coloring + BPM/song suggestions
+function renderSegmentPanel(segments) {
+  const panel = document.getElementById('segmentPanel');
+  if (!panel) return;
+  if (!segments.length) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  const totalDist = Math.max(segments[segments.length - 1].cumEnd, 0.001);
+
+  // Gradient colour timeline bar
+  let barHtml = `<div style="display:flex;gap:1px;border-radius:6px;overflow:hidden;height:10px;margin-bottom:14px">`;
+  segments.forEach(seg => {
+    const info = segmentInfo(seg.gradient);
+    const pct  = Math.max(0.5, ((seg.cumEnd - seg.cumStart) / totalDist) * 100).toFixed(1);
+    barHtml += `<div style="flex:${pct};background:${info.color}" title="${info.label} ${seg.gradient > 0 ? '+' : ''}${seg.gradient}%"></div>`;
+  });
+  barHtml += `</div>`;
+
+  // Per-segment rows
+  let rowsHtml = `<div style="display:flex;flex-direction:column;gap:5px">`;
+  segments.forEach(seg => {
+    const info  = segmentInfo(seg.gradient);
+    const song  = bestSongForSegment(info.bpmMin, info.bpmMax);
+    const gLbl  = (seg.gradient > 0 ? '+' : '') + seg.gradient + '%';
+    const sName = song ? song.name.replace(/\.[^.]+$/, '').substring(0, 22) + (song.name.length > 26 ? '…' : '') : '';
+    rowsHtml += `
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid ${info.color}">
+        <span style="font-size:.74rem;color:#666;min-width:72px;flex-shrink:0;line-height:1.4">${fmtDist(seg.cumStart)}<br>${fmtDist(seg.cumEnd)}</span>
+        <span style="font-size:.85rem;flex:1">${info.label} <span style="color:#666;font-size:.73rem">(${gLbl})</span></span>
+        <span style="font-size:.78rem;font-weight:700;color:${info.color};white-space:nowrap;flex-shrink:0">${info.bpmMin}–${info.bpmMax} BPM</span>
+        <span style="font-size:.72rem;color:#999;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0">${song ? '🎵 ' + sName : ''}</span>
+      </div>`;
+  });
+  rowsHtml += `</div>`;
+
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:1.3rem">🗺️</span>
+      <div>
+        <div style="font-weight:700;font-size:.95rem">Segmenti percorso</div>
+        <div style="font-size:.78rem;color:#888">Pendenza · BPM consigliato${analyzedSongs.length ? ' · canzone suggerita dalla tua libreria' : ''}</div>
+      </div>
+    </div>
+    ${barHtml}${rowsHtml}`;
 }
 
 function nearestOnRoute(lat, lon) {
@@ -1619,7 +1621,8 @@ function startLiveRun() {
     setLiveStatus('error', '⚠️ Il tuo browser non supporta la geolocalizzazione.');
     return;
   }
-  gpsHistory = [];
+  gpsHistory  = [];
+  lastAutoBPM = null;
   setLiveStatus('acquiring', '📡 Acquisizione segnale GPS…');
   document.getElementById('btnStartRun').style.display = 'none';
   document.getElementById('btnStopRun').style.display  = 'inline-block';
@@ -1645,7 +1648,7 @@ function stopLiveRun() {
   document.getElementById('liveStatsPanel').style.display = 'none';
   document.getElementById('liveGpsStatus').style.display  = 'none';
   // Ridisegna la mappa senza il dot
-  if (routeCoords.length > 1) drawMap(routeCoords, routeColor);
+  if (routeCoords.length > 1) drawMap(routeCoords, routeColor, null, routeSegments);
 }
 
 function onGPSUpdate(pos) {
@@ -1670,9 +1673,10 @@ function onGPSUpdate(pos) {
   document.getElementById('lvAccuracy').textContent    = '±' + Math.round(accuracy) + ' m';
   document.getElementById('progressRouteFill').style.width = pct + '%';
 
-  // Passo attuale
+  // Passo attuale → Auto-DJ
   const paceSecPerKm = getCurrentPace() ? getCurrentPace() * 60 : null;
   document.getElementById('lvPaceCurrent').textContent = fmtPace(paceSecPerKm);
+  autoSelectSong(paceSecPerKm);
 
   // Confronto con target
   const target = PACE_TARGETS[liveDiffKey];
@@ -1695,7 +1699,8 @@ function onGPSUpdate(pos) {
   }
 
   // Aggiorna mappa con dot live
-  drawMap(routeCoords, routeColor, { lat, lon, accuracy });
+  drawMap(routeCoords, routeColor, { lat, lon, accuracy }, routeSegments);
+  updateTicker();
 }
 
 function onGPSError(err) {
@@ -1752,6 +1757,49 @@ function showError(msg) {
 }
 
 // ─── EVENTS ──────────────────────────────────────────────────────────────────
+// ─── MOBILE TICKER ────────────────────────────────────────────────────────────
+function buildTickerText() {
+  const parts = [];
+  if (currentDiffKey) {
+    const pl = PLAYLISTS[currentDiffKey];
+    parts.push(`${pl.icon} ${pl.label}  ·  📏 ${fmtDist(routeTotalDist)} km  ·  🎵 BPM target: ${pl.bpmRange}`);
+  }
+  const lvProg = document.getElementById('lvProgress');
+  const lvPace = document.getElementById('lvPaceCurrent');
+  const lvDist = document.getElementById('lvDistCovered');
+  if (liveWatchId && lvProg && lvProg.textContent !== '—') {
+    parts.push(`🏃 ${lvDist.textContent} percorsi  ·  ${lvProg.textContent} completato  ·  ⏱ ${lvPace.textContent}/km`);
+    const fb = document.getElementById('paceFeedback');
+    if (fb && fb.style.display !== 'none' && fb.textContent.trim()) parts.push(fb.textContent.trim());
+  }
+  if (analyzedSongs.length) {
+    const compat = analyzedSongs.filter(s => bpmMatch(s.bpm) >= 2).length;
+    parts.push(`🎶 ${compat} brani compatibili su ${analyzedSongs.length}`);
+  }
+  if (currentPlayingIdx !== null && analyzedSongs[currentPlayingIdx]) {
+    const s = analyzedSongs[currentPlayingIdx];
+    parts.push(`▶ ${s.name.replace(/\.[^.]+$/, '')}  ·  ${s.bpm ? s.bpm + ' BPM' : '?'}`);
+  }
+  return parts.length
+    ? parts.join('   ·   ')
+    : '🎵 Strava Music Pacer  ·  Carica un file GPX per iniziare  ·  analisi percorso  ·  playlist BPM personalizzata  ·  GPS live run';
+}
+
+function updateTicker() {
+  const a = document.getElementById('mobileTickerA');
+  const b = document.getElementById('mobileTickerB');
+  if (!a || !b) return;
+  const text = buildTickerText();
+  a.innerHTML = text;
+  b.innerHTML = text;
+  const track = document.getElementById('mobileTickerTrack');
+  if (track) {
+    track.style.animation = 'none';
+    track.offsetWidth; // force reflow
+    track.style.animation = 'mTickerScroll 28s linear infinite';
+  }
+}
+
 document.getElementById('fileInput').addEventListener('change', e => {
   handleFile(e.target.files[0]);
 });
@@ -1765,5 +1813,16 @@ dropZone.addEventListener('drop', e => {
   handleFile(e.dataTransfer.files[0]);
 });
 </script>
+
+<!-- Auto-DJ floating notification -->
+<div id="autoDJNotif"></div>
+
+<!-- Mobile bottom ticker -->
+<div id="mobileTicker">
+  <div id="mobileTickerTrack">
+    <span id="mobileTickerA">🎵 Strava Music Pacer &nbsp;·&nbsp; Carica un file GPX per iniziare &nbsp;·&nbsp; analisi percorso &nbsp;·&nbsp; playlist BPM personalizzata &nbsp;·&nbsp; GPS live run</span>
+    <span id="mobileTickerB">🎵 Strava Music Pacer &nbsp;·&nbsp; Carica un file GPX per iniziare &nbsp;·&nbsp; analisi percorso &nbsp;·&nbsp; playlist BPM personalizzata &nbsp;·&nbsp; GPS live run</span>
+  </div>
+</div>
 </body>
 </html>
