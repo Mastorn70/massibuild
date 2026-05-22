@@ -146,9 +146,30 @@
       padding: 20px;
       margin-bottom: 28px;
       border: 1px solid rgba(255,255,255,0.06);
+      position: relative;
     }
     .map-section h3 { font-size: 0.95rem; color: #888; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
-    #routeMap { border-radius: 10px; overflow: hidden; display: block; width: 100%; cursor: crosshair; }
+    #routeMap { border-radius: 10px; overflow: hidden; display: block; width: 100%; cursor: grab; }
+    #routeMap:active { cursor: grabbing; }
+    #mapZoomCtrl {
+      position: absolute; top: 52px; right: 12px;
+      display: flex; flex-direction: column; gap: 4px; z-index: 10;
+    }
+    #mapZoomCtrl button {
+      width: 30px; height: 30px; border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(13,17,23,0.88); color: white;
+      font-size: 1.05rem; cursor: pointer; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    #mapZoomCtrl button:hover { background: rgba(252,76,2,0.8); }
+    #mapZoomLabel {
+      position: absolute; bottom: 44px; right: 14px;
+      font-size: .7rem; color: rgba(255,255,255,0.35);
+      pointer-events: none; z-index: 10;
+      font-variant-numeric: tabular-nums; letter-spacing: .03em;
+    }
     .map-legend { display: flex; gap: 18px; margin-top: 10px; font-size: 0.78rem; color: #888; }
     .map-legend span { display: flex; align-items: center; gap: 5px; }
     .map-legend i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; display: inline-block; flex-shrink: 0; }
@@ -379,6 +400,58 @@
       }
     }
 
+    /* CUE POINTS PANEL */
+    .cue-panel {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 28px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    @media (max-width: 768px) {
+      .cue-panel {
+        border-radius: 0;
+        margin-bottom: 0;
+        border-left: none;
+        border-right: none;
+        border-top: 1px solid rgba(255,255,255,0.05);
+      }
+    }
+    .cue-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      margin-bottom: 5px;
+      border-left: 3px solid var(--orange);
+    }
+    .cue-row select {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: .8rem;
+      cursor: pointer;
+      max-width: 260px;
+    }
+    .cue-row select:focus { outline: none; border-color: var(--orange); }
+    .btn-cue-edit {
+      padding: 7px 15px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: transparent;
+      color: var(--text);
+      font-size: .82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-cue-edit.active { background: var(--orange); border-color: var(--orange); color: white; font-weight: 600; }
+    .map-section.edit-mode { border-color: rgba(252,76,2,0.55) !important; box-shadow: 0 0 0 2px rgba(252,76,2,0.25); }
+
     /* ALERT */
     .error-box {
       background: rgba(231,76,60,0.12);
@@ -565,12 +638,38 @@
     <div class="segment-panel" id="segmentPanel" style="display:none"></div>
 
     <div class="map-section" id="mapSection">
-      <h3>&#128205; Percorso su mappa</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <h3 style="margin:0">&#128205; Percorso su mappa</h3>
+        <button class="btn-cue-edit" id="btnCueEdit" onclick="toggleMapEditMode()">&#9998; Cue</button>
+      </div>
       <canvas id="routeMap"></canvas>
       <div class="map-legend">
         <span><i style="background:#2ecc71"></i> Partenza</span>
         <span><i id="endDotColor" style="background:var(--orange)"></i> Arrivo</span>
+        <span><i style="background:var(--orange);border-radius:3px"></i> Cue change</span>
       </div>
+      <!-- Zoom controls -->
+      <div id="mapZoomCtrl">
+        <button onclick="adjustMapZoom(1.45)" title="Zoom avanti">+</button>
+        <button onclick="adjustMapZoom(1/1.45)" title="Zoom indietro">−</button>
+        <button onclick="resetMapZoom()" title="Vista completa">↺</button>
+      </div>
+      <div id="mapZoomLabel">100%</div>
+    </div>
+
+    <!-- CUE POINTS -->
+    <div class="cue-panel" id="cuePtsPanel" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:1.3rem">&#128205;</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:.95rem">Cue Points &mdash; Cambio canzone</div>
+          <div style="font-size:.78rem;color:#888">Posiziona punti sul percorso &middot; assegna una canzone &middot; la app cambia brano in automatico durante la corsa</div>
+        </div>
+      </div>
+      <div id="editModeHint" style="display:none;background:rgba(252,76,2,0.1);border:1px solid rgba(252,76,2,0.3);border-radius:8px;padding:8px 12px;font-size:.82rem;color:#fc4c02;margin-bottom:12px">
+        &#128205; Clicca sul percorso per aggiungere un punto di cambio &middot; premi di nuovo <strong>Cue</strong> per uscire dalla modalit&agrave; edit
+      </div>
+      <div id="cuePtsList"></div>
     </div>
 
     <!-- MY MUSIC -->
@@ -592,10 +691,17 @@
         <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap">
           <button onclick="event.stopPropagation();document.getElementById('musicFileInput').click()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem">📂 Seleziona cartella <span style="color:#888;font-size:.75rem">(desktop)</span></button>
           <button onclick="event.stopPropagation();document.getElementById('musicFileInputMulti').click()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem">🎵 Seleziona file <span style="color:#888;font-size:.75rem">(mobile)</span></button>
+          <button onclick="event.stopPropagation();document.getElementById('bpmCacheInput').click()" style="background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.22);color:#aaa;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem" title="Carica un file bpm-analisi.json salvato per saltare la ri-analisi">&#9889; Carica analisi .json</button>
+          <input type="file" id="bpmCacheInput" accept=".json,application/json" onchange="loadBpmCacheFile(this)" style="display:none" />
+          <button onclick="event.stopPropagation();document.getElementById('bpmCacheInput').click()" style="background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.22);color:#aaa;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem" title="Carica un file bpm-analisi.json salvato per saltare la ri-analisi">&#9889; Carica analisi .json</button>
+          <input type="file" id="bpmCacheInput" accept=".json,application/json" onchange="loadBpmCacheFile(this)" style="display:none" />
         </div>
         <input type="file" id="musicFileInput" accept="audio/*" webkitdirectory />
         <input type="file" id="musicFileInputMulti" accept="audio/*" multiple />
       </div>
+
+      <!-- Cache status bar -->
+      <div id="cacheStatusBar" style="display:none;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);border-radius:8px;padding:9px 14px;margin-top:10px;font-size:.84rem;color:#2ecc71"></div>
 
       <!-- Folder status bar -->
       <div id="folderStatus" style="display:none;background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:.84rem;color:#aaa"></div>
@@ -613,6 +719,8 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
           <span id="musicResultsSummary" style="font-size:.88rem;color:#aaa"></span>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-dl" onclick="exportBpmAnalysis()" title="Salva i BPM analizzati — ricaricalo la prossima volta per saltare l'analisi">&#128190; Salva analisi .json</button>
+            <button class="btn-dl" onclick="exportBpmAnalysis()" title="Salva i BPM analizzati — ricaricalo la prossima volta per saltare l'analisi">&#128190; Salva analisi .json</button>
             <button class="btn-dl" id="btnDlLocalM3u" onclick="downloadLocalM3U(false)">⬇ Playlist compatibile .m3u</button>
             <button class="btn-dl" onclick="downloadLocalM3U(true)">⬇ Tutte .m3u</button>
           </div>
@@ -800,6 +908,8 @@ function drawMap(coords, routeColor, livePos, segments) {
   }
   const offX = (W - drawW) / 2;
   const offY = (H - drawH) / 2;
+  // Store projection for map-click → lat/lon inverse mapping
+  mapProjection = { offX, offY, drawW, drawH, minLat, maxLat, minLon, spanLon, spanLat };
 
   function project([lat, lon]) {
     const x = offX + ((lon - minLon) / spanLon) * drawW;
@@ -812,6 +922,13 @@ function drawMap(coords, routeColor, livePos, segments) {
   ctx.beginPath();
   ctx.roundRect(0, 0, W, H, 10);
   ctx.fill();
+
+  // Apply zoom/pan transform — clip to canvas so content doesn't bleed outside
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, W, H);
+  ctx.clip();
+  ctx.setTransform(mapZoom, 0, 0, mapZoom, mapPan.x, mapPan.y);
 
   // ── Griglia ──
   ctx.strokeStyle = 'rgba(255,255,255,0.05)';
@@ -883,6 +1000,27 @@ function drawMap(coords, routeColor, livePos, segments) {
     });
   }
 
+  // ── Cue point markers (numbered orange circles) ──
+  if (cuePts.length && routeCumDist.length) {
+    cuePts.forEach((cue, n) => {
+      let ptIdx = routeCumDist.findIndex(d => d >= cue.cumDist);
+      if (ptIdx < 0) ptIdx = routeCumDist.length - 1;
+      const [lat, lon] = routeCoords[Math.max(0, ptIdx)];
+      const [px, py]   = project([lat, lon]);
+      ctx.beginPath();
+      ctx.arc(px, py, 11, 0, Math.PI * 2);
+      ctx.fillStyle   = '#fc4c02';
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth   = 2;
+      ctx.stroke();
+      ctx.fillStyle   = 'white';
+      ctx.font        = 'bold 11px system-ui';
+      ctx.textAlign   = 'center';
+      ctx.fillText(n + 1, px, py + 4);
+    });
+  }
+
   // ── Posizione live (GPS) ──
   if (livePos) {
     const [px, py] = project([livePos.lat, livePos.lon]);
@@ -912,20 +1050,24 @@ function drawMap(coords, routeColor, livePos, segments) {
     ctx.fillText('Sei qui', px, py - 14);
   }
 
-  // ── Barra scala ──
-  const scaleKm = +(spanLon * cosLat * 111 / 5).toFixed(1); // ~1/5 della larghezza
-  const scaleLabel = scaleKm >= 1 ? scaleKm.toFixed(1) + ' km' : Math.round(scaleKm * 1000) + ' m';
-  const scalePx = drawW / 5;
-  const sx = offX + 8, sy = offY + drawH - 10;
-  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+  // Restore identity transform — scale bar is always drawn in screen space
+  ctx.restore();
+
+  // ── Barra scala adattiva (si aggiorna col zoom) ──
+  const actualKmPx  = (spanLon * cosLat * 111) / (drawW * mapZoom);
+  const fixedBarPx  = 72;
+  const displayKm   = actualKmPx * fixedBarPx;
+  const scaleLabel  = displayKm >= 1 ? displayKm.toFixed(1) + ' km' : Math.round(displayKm * 1000) + ' m';
+  const sx = 14, sy = H - 18;
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
   ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + scalePx, sy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + fixedBarPx, sy); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(sx, sy - 4); ctx.lineTo(sx, sy + 4); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(sx + scalePx, sy - 4); ctx.lineTo(sx + scalePx, sy + 4); ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath(); ctx.moveTo(sx + fixedBarPx, sy - 4); ctx.lineTo(sx + fixedBarPx, sy + 4); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.font = '10px system-ui';
   ctx.textAlign = 'center';
-  ctx.fillText(scaleLabel, sx + scalePx / 2, sy - 6);
+  ctx.fillText(scaleLabel, sx + fixedBarPx / 2, sy - 6);
 }
 
 // ─── DIFFICULTY ───────────────────────────────────────────────────────────────
@@ -1094,6 +1236,8 @@ function showResults(data) {
     fmtPace(target.min) + '–' + fmtPace(target.max);
   document.getElementById('liveSection').style.display    = 'block';
   document.getElementById('myMusicSection').style.display = 'block';
+  document.getElementById('cuePtsPanel').style.display    = 'block';
+  renderCuePts();
 
   document.getElementById('results').style.display = 'flex';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
@@ -1105,6 +1249,7 @@ let pendingMusicFiles = [];
 let analyzedSongs     = [];
 let currentDiffKey    = null;
 let currentPlayingIdx = null;
+let bpmCache          = new Map(); // name -> { bpm, duration } loaded from saved JSON
 
 function triggerDownload(content, filename, mime) {
   const blob = new Blob([content], { type: mime });
@@ -1225,12 +1370,44 @@ function setMusicFiles(files, folderName) {
   startAnalysis();
 }
 
+// ── BPM cache: export & import ───────────────────────────────────────────────
+function exportBpmAnalysis() {
+  if (!analyzedSongs.length) return;
+  const payload = {
+    version: 1,
+    created: new Date().toISOString(),
+    songs: analyzedSongs.map(s => ({ name: s.name, path: s.path, bpm: s.bpm, duration: s.duration }))
+  };
+  triggerDownload(JSON.stringify(payload, null, 2), 'bpm-analisi.json', 'application/json');
+}
+
+function loadBpmCacheFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.songs || !Array.isArray(data.songs)) throw new Error('formato non valido');
+      bpmCache = new Map(data.songs.map(s => [s.name, { bpm: s.bpm, duration: s.duration }]));
+      const bar = document.getElementById('cacheStatusBar');
+      bar.style.display = 'block';
+      bar.innerHTML = `✅ Cache caricata: <strong>${bpmCache.size}</strong> brani — l\'analisi salterà i file già noti`;
+    } catch (err) {
+      alert('Errore nel file di cache: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
 // ── Analysis runner ───────────────────────────────────────────────────────────
 async function startAnalysis() {
   if (!pendingMusicFiles.length) return;
   analyzedSongs = [];
   currentPlayingIdx = null;
   analysisAborted = false;
+  let cacheHits = 0;
 
   const prog  = document.getElementById('analysisProgress');
   const fill  = document.getElementById('analysisProgressFill');
@@ -1242,21 +1419,38 @@ async function startAnalysis() {
     if (analysisAborted) break;
     const file = pendingMusicFiles[i];
     const pct  = Math.round((i / pendingMusicFiles.length) * 100);
-    label.textContent = `Analisi ${i + 1}/${pendingMusicFiles.length}: ${file.name.replace(/\.[^.]+$/,'')}`;
-    fill.style.width  = pct + '%';
-    try {
-      const { bpm, duration } = await analyzeBPM(file);
-      analyzedSongs.push({ file, name: file.name, path: file.webkitRelativePath || file.name, bpm, duration, url: null });
-    } catch {
-      analyzedSongs.push({ file, name: file.name, path: file.webkitRelativePath || file.name, bpm: null, duration: null, url: null });
+    fill.style.width = pct + '%';
+
+    const cached = bpmCache.get(file.name);
+    if (cached) {
+      // Use saved BPM — skip audio decoding entirely
+      label.textContent = `⚡ Cache ${i + 1}/${pendingMusicFiles.length}: ${file.name.replace(/\.[^.]+$/, '')}`;
+      analyzedSongs.push({ file, name: file.name, path: file.webkitRelativePath || file.name,
+        bpm: cached.bpm, duration: cached.duration, url: null, fromCache: true });
+      cacheHits++;
+    } else {
+      label.textContent = `Analisi ${i + 1}/${pendingMusicFiles.length}: ${file.name.replace(/\.[^.]+$/, '')}`;
+      try {
+        const { bpm, duration } = await analyzeBPM(file);
+        analyzedSongs.push({ file, name: file.name, path: file.webkitRelativePath || file.name, bpm, duration, url: null });
+      } catch {
+        analyzedSongs.push({ file, name: file.name, path: file.webkitRelativePath || file.name, bpm: null, duration: null, url: null });
+      }
     }
     // Yield to browser every 5 files
     if (i % 5 === 4) await new Promise(r => setTimeout(r, 0));
   }
 
   fill.style.width = '100%';
-  label.textContent = analysisAborted ? `Interrotta — ${analyzedSongs.length} brani analizzati` : 'Analisi completata!';
-  setTimeout(() => { prog.style.display = 'none'; }, 1000);
+  const newAnalyzed = analyzedSongs.length - cacheHits;
+  if (analysisAborted) {
+    label.textContent = `Interrotta — ${analyzedSongs.length} brani caricati`;
+  } else if (cacheHits > 0) {
+    label.textContent = `Completato · ⚡ ${cacheHits} dalla cache · 🎵 ${newAnalyzed} nuovi analizzati`;
+  } else {
+    label.textContent = 'Analisi completata!';
+  }
+  setTimeout(() => { prog.style.display = 'none'; }, 1800);
 
   // Sort: perfect match first, then close, then others; within group sort by BPM ascending
   analyzedSongs.sort((a, b) => {
@@ -1431,6 +1625,14 @@ let routeElevations  = []; // elevation per coord (null = no data)
 let routeSegments    = []; // pre-computed gradient segments
 let autoDJEnabled    = true;
 let lastAutoBPM      = null;
+let cuePts           = []; // { id, cumDist, songIdx, triggered }
+let cueIdSeq         = 0;
+let mapEditMode      = false;
+let mapProjection    = null; // { offX,offY,drawW,drawH,minLat,maxLat,minLon,spanLon,spanLat }
+let mapZoom          = 1;
+let mapPan           = { x: 0, y: 0 };
+let _mapDrag         = null;  // { startX, startY, startPanX, startPanY }
+let _mapDragMoved    = false;
 
 const PACE_TARGETS = {
   easy:   { min: 390, max: 450 }, // sec/km  6:30–7:30
@@ -1623,6 +1825,8 @@ function startLiveRun() {
   }
   gpsHistory  = [];
   lastAutoBPM = null;
+  // Reset cue point triggered flags so they fire again on next live run
+  cuePts.forEach(c => { c.triggered = false; });
   setLiveStatus('acquiring', '📡 Acquisizione segnale GPS…');
   document.getElementById('btnStartRun').style.display = 'none';
   document.getElementById('btnStopRun').style.display  = 'inline-block';
@@ -1673,10 +1877,25 @@ function onGPSUpdate(pos) {
   document.getElementById('lvAccuracy').textContent    = '±' + Math.round(accuracy) + ' m';
   document.getElementById('progressRouteFill').style.width = pct + '%';
 
-  // Passo attuale → Auto-DJ
+  // Passo attuale → Auto-DJ + cue point check
   const paceSecPerKm = getCurrentPace() ? getCurrentPace() * 60 : null;
   document.getElementById('lvPaceCurrent').textContent = fmtPace(paceSecPerKm);
-  autoSelectSong(paceSecPerKm);
+
+  // Cue point firing: check if any un-triggered cue has been passed
+  let cueFired = false;
+  for (const cue of cuePts) {
+    if (!cue.triggered && cumDist >= cue.cumDist) {
+      cue.triggered = true;
+      if (cue.songIdx !== null && analyzedSongs[cue.songIdx]) {
+        const s = analyzedSongs[cue.songIdx];
+        playLocalSong(cue.songIdx);
+        showAutoDJNotif(s.name.replace(/\.[^.]+$/, ''), s.bpm, null);
+        lastAutoBPM = null;
+        cueFired = true;
+      }
+    }
+  }
+  if (!cueFired) autoSelectSong(paceSecPerKm);
 
   // Confronto con target
   const target = PACE_TARGETS[liveDiffKey];
@@ -1719,6 +1938,110 @@ function setLiveStatus(type, msg) {
   el.style.display = 'block';
 }
 
+// ─── MAP ZOOM / PAN ───────────────────────────────────────────────────────────
+function adjustMapZoom(factor, cx, cy) {
+  if (!routeCoords.length) return;
+  const canvas = document.getElementById('routeMap');
+  const cxc = (cx !== undefined) ? cx : (canvas ? canvas.width  / 2 : 0);
+  const cyc = (cy !== undefined) ? cy : (canvas ? canvas.height / 2 : 0);
+  const oldZoom = mapZoom;
+  mapZoom = Math.max(0.5, Math.min(10, mapZoom * factor));
+  mapPan.x = cxc - (cxc - mapPan.x) * mapZoom / oldZoom;
+  mapPan.y = cyc - (cyc - mapPan.y) * mapZoom / oldZoom;
+  drawMap(routeCoords, routeColor, null, routeSegments);
+  updateZoomLabel();
+}
+
+function resetMapZoom() {
+  mapZoom = 1;
+  mapPan  = { x: 0, y: 0 };
+  if (routeCoords.length) drawMap(routeCoords, routeColor, null, routeSegments);
+  updateZoomLabel();
+}
+
+function updateZoomLabel() {
+  const el = document.getElementById('mapZoomLabel');
+  if (el) el.textContent = Math.round(mapZoom * 100) + '%';
+}
+
+// ─── CUE POINTS ───────────────────────────────────────────────────────────────
+function toggleMapEditMode() {
+  mapEditMode = !mapEditMode;
+  const btn  = document.getElementById('btnCueEdit');
+  const hint = document.getElementById('editModeHint');
+  const sec  = document.getElementById('mapSection');
+  if (btn)  btn.classList.toggle('active', mapEditMode);
+  if (hint) hint.style.display = mapEditMode ? 'block' : 'none';
+  if (sec)  sec.classList.toggle('edit-mode', mapEditMode);
+  // Always show panel when entering edit mode
+  if (mapEditMode) {
+    document.getElementById('cuePtsPanel').style.display = 'block';
+    renderCuePts();
+  }
+}
+
+function onMapClick(e) {
+  if (!mapEditMode || !mapProjection || !routeCoords.length) return;
+  const canvas = document.getElementById('routeMap');
+  if (!canvas) return;
+  const rect   = canvas.getBoundingClientRect();
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top)  * scaleY;
+  // Inverse-apply zoom/pan to get logical (unzoomed) canvas coordinate
+  const lx = (cx - mapPan.x) / mapZoom;
+  const ly = (cy - mapPan.y) / mapZoom;
+  const { offX, offY, drawW, drawH, minLat, maxLat, minLon, spanLon, spanLat } = mapProjection;
+  const lon = minLon + ((lx - offX) / drawW) * spanLon;
+  const lat = maxLat - ((ly - offY) / drawH) * spanLat;
+  const { cumDist } = nearestOnRoute(lat, lon);
+  addCuePoint(cumDist);
+}
+
+function addCuePoint(cumDist) {
+  cuePts.push({ id: ++cueIdSeq, cumDist, songIdx: null, triggered: false });
+  cuePts.sort((a, b) => a.cumDist - b.cumDist);
+  renderCuePts();
+  drawMap(routeCoords, routeColor, null, routeSegments);
+}
+
+function removeCuePoint(id) {
+  cuePts = cuePts.filter(c => c.id !== id);
+  renderCuePts();
+  drawMap(routeCoords, routeColor, null, routeSegments);
+  if (!cuePts.length) document.getElementById('cuePtsList').innerHTML =
+    '<p style="color:#888;font-size:.83rem;padding:8px 0">Nessun punto aggiunto. Premi <strong>Cue</strong> sulla mappa e clicca sul percorso.</p>';
+}
+
+function setCueSong(id, value) {
+  const cue = cuePts.find(c => c.id === id);
+  if (cue) cue.songIdx = value === '-1' ? null : parseInt(value, 10);
+}
+
+function renderCuePts() {
+  const list = document.getElementById('cuePtsList');
+  if (!list) return;
+  if (!cuePts.length) {
+    list.innerHTML = '<p style="color:#888;font-size:.83rem;padding:8px 0">Nessun punto aggiunto. Premi <strong>✎ Cue</strong> in alto a destra della mappa, poi clicca sul percorso.</p>';
+    return;
+  }
+  const songOpts = analyzedSongs.map((s, i) => {
+    const nm = s.name.replace(/\.[^.]+$/, '').substring(0, 32);
+    return `<option value="${i}">${nm}${s.bpm ? ' — ' + s.bpm + ' BPM' : ''}</option>`;
+  }).join('');
+  list.innerHTML = cuePts.map((cue, n) => `
+    <div class="cue-row">
+      <span style="width:24px;height:24px;border-radius:50%;background:var(--orange);color:white;font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${n + 1}</span>
+      <span style="font-size:.82rem;color:#aaa;white-space:nowrap;flex-shrink:0;min-width:52px">${fmtDist(cue.cumDist)}</span>
+      <select onchange="setCueSong(${cue.id}, this.value)">
+        <option value="-1"${cue.songIdx === null ? ' selected' : ''}>🎵 Auto (BPM match)</option>
+        ${songOpts.replace(`value="${cue.songIdx}"`, `value="${cue.songIdx}" selected`)}
+      </select>
+      <button onclick="removeCuePoint(${cue.id})" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:1.1rem;flex-shrink:0;line-height:1" title="Rimuovi">✕</button>
+    </div>`).join('');
+}
+
 // ─── FILE HANDLING ────────────────────────────────────────────────────────────
 function handleFile(file) {
   if (!file) return;
@@ -1729,6 +2052,12 @@ function handleFile(file) {
 
   showError('');
   stopLiveRun();
+  // Reset cue points and edit mode on new GPX load
+  cuePts = []; cueIdSeq = 0; mapEditMode = false;
+  mapZoom = 1; mapPan = { x: 0, y: 0 }; updateZoomLabel();
+  const _ms = document.getElementById('mapSection'); if (_ms) _ms.classList.remove('edit-mode');
+  const _bce = document.getElementById('btnCueEdit'); if (_bce) _bce.classList.remove('active');
+  const _eh = document.getElementById('editModeHint'); if (_eh) _eh.style.display = 'none';
   analyzedSongs = []; pendingMusicFiles = []; currentPlayingIdx = null;
   const ap = document.getElementById('audioPlayer'); if (ap) ap.pause();
   document.getElementById('loader').style.display = 'block';
@@ -1812,6 +2141,100 @@ dropZone.addEventListener('drop', e => {
   dropZone.classList.remove('drag');
   handleFile(e.dataTransfer.files[0]);
 });
+
+// ── Map interactions (zoom, pan, cue-point click) ──────────────────────────
+const _mapSec = document.getElementById('mapSection');
+
+// Scroll wheel zoom (desktop)
+_mapSec.addEventListener('wheel', e => {
+  const canvas = document.getElementById('routeMap');
+  if (!canvas || !routeCoords.length) return;
+  e.preventDefault();
+  const rect   = canvas.getBoundingClientRect();
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top)  * scaleY;
+  adjustMapZoom(e.deltaY < 0 ? 1.12 : 1 / 1.12, cx, cy);
+}, { passive: false });
+
+// Drag to pan (mouse)
+_mapSec.addEventListener('mousedown', e => {
+  if (e.target.id !== 'routeMap' || !routeCoords.length) return;
+  _mapDrag = { startX: e.clientX, startY: e.clientY, startPanX: mapPan.x, startPanY: mapPan.y };
+  _mapDragMoved = false;
+});
+document.addEventListener('mousemove', e => {
+  if (!_mapDrag) return;
+  const dx = e.clientX - _mapDrag.startX;
+  const dy = e.clientY - _mapDrag.startY;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+    _mapDragMoved = true;
+    mapPan.x = _mapDrag.startPanX + dx;
+    mapPan.y = _mapDrag.startPanY + dy;
+    if (routeCoords.length) drawMap(routeCoords, routeColor, null, routeSegments);
+  }
+});
+document.addEventListener('mouseup', () => { _mapDrag = null; });
+
+// Click delegation (cue points) — ignored when a drag just ended
+_mapSec.addEventListener('click', e => {
+  if (e.target && e.target.id === 'routeMap') {
+    if (_mapDragMoved) { _mapDragMoved = false; return; }
+    onMapClick(e);
+  }
+});
+
+// Touch: single-finger pan + two-finger pinch zoom
+let _touchPinchDist = null;
+let _touchPanStart  = null;
+_mapSec.addEventListener('touchstart', e => {
+  if (!routeCoords.length) return;
+  if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    _touchPinchDist = Math.hypot(dx, dy);
+    _touchPanStart  = null;
+  } else if (e.touches.length === 1) {
+    _touchPanStart = { x: e.touches[0].clientX, y: e.touches[0].clientY,
+                       panX: mapPan.x, panY: mapPan.y };
+    _touchPinchDist = null;
+  }
+}, { passive: true });
+_mapSec.addEventListener('touchmove', e => {
+  if (!routeCoords.length) return;
+  if (e.touches.length === 2 && _touchPinchDist !== null) {
+    e.preventDefault();
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const newDist = Math.hypot(dx, dy);
+    const factor  = newDist / _touchPinchDist;
+    _touchPinchDist = newDist;
+    const canvas = document.getElementById('routeMap');
+    if (canvas) {
+      const rect  = canvas.getBoundingClientRect();
+      const scX   = canvas.width  / rect.width;
+      const scY   = canvas.height / rect.height;
+      const mx = ((e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left) * scX;
+      const my = ((e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top)  * scY;
+      const old = mapZoom;
+      mapZoom  = Math.max(0.5, Math.min(10, mapZoom * factor));
+      mapPan.x = mx - (mx - mapPan.x) * mapZoom / old;
+      mapPan.y = my - (my - mapPan.y) * mapZoom / old;
+      drawMap(routeCoords, routeColor, null, routeSegments);
+      updateZoomLabel();
+    }
+  } else if (e.touches.length === 1 && _touchPanStart && mapZoom > 1.05) {
+    e.preventDefault();
+    mapPan.x = _touchPanStart.panX + (e.touches[0].clientX - _touchPanStart.x);
+    mapPan.y = _touchPanStart.panY + (e.touches[0].clientY - _touchPanStart.y);
+    drawMap(routeCoords, routeColor, null, routeSegments);
+  }
+}, { passive: false });
+_mapSec.addEventListener('touchend', () => {
+  _touchPinchDist = null;
+  _touchPanStart  = null;
+}, { passive: true });
 </script>
 
 <!-- Auto-DJ floating notification -->
