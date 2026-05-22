@@ -547,13 +547,18 @@
 
       <hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin-bottom:20px">
 
-      <!-- Folder picker -->
-      <div class="mymusic-drop" id="musicDropZone" onclick="document.getElementById('musicFileInput').click()">
-        <div style="font-size:2.2rem">📂</div>
-        <strong>Seleziona la cartella con la tua musica</strong>
-        <p>Tutte le canzoni vengono analizzate in automatico · MP3 · AAC · OGG · WAV · FLAC · M4A</p>
+      <!-- Folder / file picker -->
+      <div class="mymusic-drop" id="musicDropZone">
+        <div style="font-size:2.2rem">🎵</div>
+        <strong>Carica la tua musica</strong>
+        <p>Trascina qui una cartella (desktop) · MP3 · AAC · OGG · WAV · FLAC · M4A</p>
         <p style="margin-top:4px;color:#666;font-size:.78rem">Analisi BPM locale — nessun file viene caricato su internet</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap">
+          <button onclick="event.stopPropagation();document.getElementById('musicFileInput').click()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem">📂 Seleziona cartella <span style="color:#888;font-size:.75rem">(desktop)</span></button>
+          <button onclick="event.stopPropagation();document.getElementById('musicFileInputMulti').click()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem">🎵 Seleziona file <span style="color:#888;font-size:.75rem">(mobile)</span></button>
+        </div>
         <input type="file" id="musicFileInput" accept="audio/*" webkitdirectory />
+        <input type="file" id="musicFileInputMulti" accept="audio/*" multiple />
       </div>
 
       <!-- Folder status bar -->
@@ -1307,13 +1312,21 @@ let analysisAborted = false;
 let musicViewTab = 'compat'; // 'compat' | 'all'
 
 document.addEventListener('DOMContentLoaded', () => {
-  const mDrop  = document.getElementById('musicDropZone');
-  const mInput = document.getElementById('musicFileInput');
+  const mDrop       = document.getElementById('musicDropZone');
+  const mInput      = document.getElementById('musicFileInput');
+  const mInputMulti = document.getElementById('musicFileInputMulti');
   if (!mDrop || !mInput) return;
 
+  // Folder picker (desktop / Chrome Android)
   mInput.addEventListener('change', e => {
     const files = [...e.target.files].filter(f => AUDIO_EXTS.test(f.name));
     setMusicFiles(files, e.target.files[0]?.webkitRelativePath?.split('/')[0] || '');
+  });
+
+  // Multi-file picker (mobile fallback)
+  mInputMulti.addEventListener('change', e => {
+    const files = [...e.target.files].filter(f => AUDIO_EXTS.test(f.name));
+    setMusicFiles(files, files.length + ' file selezionati');
   });
   mDrop.addEventListener('dragover', e => { e.preventDefault(); mDrop.classList.add('drag'); });
   mDrop.addEventListener('dragleave', () => mDrop.classList.remove('drag'));
