@@ -220,6 +220,18 @@
       transition: background 0.2s;
     }
     .btn-stop:hover { background: rgba(231,76,60,0.28); }
+    .btn-save-gpx {
+      padding: 11px 22px;
+      background: rgba(52,152,219,0.15);
+      color: #3498db;
+      border: 1px solid rgba(52,152,219,0.4);
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-save-gpx:hover { background: rgba(52,152,219,0.28); }
     .live-status {
       padding: 10px 14px;
       border-radius: 8px;
@@ -515,7 +527,7 @@
         border-bottom: 1px solid rgba(255,255,255,0.07);
       }
       .map-section h3 { font-size: .78rem; margin-bottom: 8px; }
-      #routeMap { max-height: 210px; }
+      #routeMap { max-height: 280px; }
 
       /* STATS: second slot */
       .stats-grid {
@@ -764,6 +776,7 @@
       <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
         <button class="btn-run" id="btnStartRun" onclick="startLiveRun()">▶ Avvia Corsa</button>
         <button class="btn-stop" id="btnStopRun" onclick="stopLiveRun()" style="display:none">■ Ferma</button>
+        <button class="btn-save-gpx" id="btnSaveGPX" onclick="saveGPXTrack()" style="display:none">💾 Salva GPX</button>
       </div>
 
       <div id="liveStatsPanel" style="display:none">
@@ -868,8 +881,53 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.asin(Math.sqrt(a));
 }
 
+// ─── MAP TILES (OpenStreetMap) ────────────────────────────────────────────────
+const _tileCache = new Map(); // 'z/x/y' → { img, loaded }
+let _lastDrawMapArgs = null;
+function _lonToTile(lon, z) { return Math.floor((lon + 180) / 360 * (1 << z)); }
+function _latToTile(lat, z) {
+  const r = lat * Math.PI / 180;
+  return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * (1 << z));
+}
+function _tileEdgeLon(x, z) { return x / (1 << z) * 360 - 180; }
+function _tileEdgeLat(y, z) {
+  const n = Math.PI - 2 * Math.PI * y / (1 << z);
+  return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+}
+function _drawTiles(ctx, projectFn, minLon, maxLon, minLat, maxLat) {
+  let z = 16;
+  for (; z >= 3; z--) {
+    const dx = _lonToTile(maxLon, z) - _lonToTile(minLon, z) + 1;
+    const dy = _latToTile(minLat, z) - _latToTile(maxLat, z) + 1;
+    if (dx * dy <= 30) break;
+  }
+  const x0 = _lonToTile(minLon, z), x1 = _lonToTile(maxLon, z);
+  const y0 = _latToTile(maxLat, z), y1 = _latToTile(minLat, z);
+  for (let tx = x0; tx <= x1; tx++) {
+    for (let ty = y0; ty <= y1; ty++) {
+      const key  = `${z}/${tx}/${ty}`;
+      const lon0 = _tileEdgeLon(tx,   z), lon1 = _tileEdgeLon(tx+1, z);
+      const lat0 = _tileEdgeLat(ty,   z), lat1 = _tileEdgeLat(ty+1, z);
+      const [px0, py0] = projectFn([lat0, lon0]);
+      const [px1, py1] = projectFn([lat1, lon1]);
+      const tw = px1 - px0, th = py1 - py0;
+      if (tw <= 0 || th <= 0) continue;
+      if (_tileCache.has(key) && _tileCache.get(key).loaded) {
+        ctx.drawImage(_tileCache.get(key).img, px0, py0, tw, th);
+      } else if (!_tileCache.has(key)) {
+        const e = { img: new Image(), loaded: false };
+        _tileCache.set(key, e);
+        e.img.onload = () => { e.loaded = true; if (_lastDrawMapArgs) drawMap(..._lastDrawMapArgs); };
+        e.img.onerror = () => { _tileCache.delete(key); };
+        e.img.src = `https://tile.openstreetmap.org/${z}/${tx}/${ty}.png`;
+      }
+    }
+  }
+}
+
 // ─── MAP (canvas self-contained, no external deps) ───────────────────────────
 function drawMap(coords, routeColor, livePos, segments) {
+  _lastDrawMapArgs = [coords, routeColor, livePos, segments];
   const section = document.getElementById('mapSection');
   // Sostituisci il canvas ad ogni caricamento
   let canvas = document.getElementById('routeMap');
@@ -879,7 +937,7 @@ function drawMap(coords, routeColor, livePos, segments) {
   canvas = newCanvas;
 
   const W = section.clientWidth - 40; // tolgo il padding della card
-  const H = Math.round(W * 0.52);     // aspect ratio ~2:1
+  const H = Math.round(W * 0.65);     // riquadro più alto
   canvas.width  = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -930,20 +988,16 @@ function drawMap(coords, routeColor, livePos, segments) {
   ctx.clip();
   ctx.setTransform(mapZoom, 0, 0, mapZoom, mapPan.x, mapPan.y);
 
-  // ── Griglia ──
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 1;
-  for (let i = 1; i < 5; i++) {
-    const x = offX + drawW * i / 5;
-    const y = offY + drawH * i / 5;
-    ctx.beginPath(); ctx.moveTo(x, offY); ctx.lineTo(x, offY + drawH); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(offX, y); ctx.lineTo(offX + drawW, y); ctx.stroke();
-  }
+  // ── Mappa OSM ──
+  _drawTiles(ctx, project, minLon, maxLon, minLat, maxLat);
+  // Overlay scuro per migliorare la leggibilità del percorso sulla mappa
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.fillRect(-1e6, -1e6, 2e6, 2e6);
 
   // ── Ombra tracciato ──
   ctx.save();
-  ctx.strokeStyle = routeColor + '44';
-  ctx.lineWidth = 8;
+  ctx.strokeStyle = routeColor + '66';
+  ctx.lineWidth = 14;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.beginPath();
@@ -956,7 +1010,7 @@ function drawMap(coords, routeColor, livePos, segments) {
 
   // ── Tracciato principale ──
   ctx.strokeStyle = routeColor;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 4;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.beginPath();
@@ -1619,7 +1673,8 @@ let routeTotalDist   = 0;
 let routeColor       = '#fc4c02';
 let liveDiffKey      = null;
 let liveWatchId      = null;
-let gpsHistory       = []; // { lat, lon, time }
+let gpsHistory       = []; // { lat, lon, time } — finestra 45s per il passo
+let gpsTrack         = []; // { lat, lon, alt, time } — traccia completa da esportare
 let liveMapTimer     = null;
 let routeElevations  = []; // elevation per coord (null = no data)
 let routeSegments    = []; // pre-computed gradient segments
@@ -1824,7 +1879,9 @@ function startLiveRun() {
     return;
   }
   gpsHistory  = [];
-  lastAutoBPM = null;
+  gpsTrack     = [];
+  lastAutoBPM  = null;
+  document.getElementById('btnSaveGPX').style.display = 'none';
   // Reset cue point triggered flags so they fire again on next live run
   cuePts.forEach(c => { c.triggered = false; });
   setLiveStatus('acquiring', '📡 Acquisizione segnale GPS…');
@@ -1851,6 +1908,8 @@ function stopLiveRun() {
   document.getElementById('btnStopRun').style.display  = 'none';
   document.getElementById('liveStatsPanel').style.display = 'none';
   document.getElementById('liveGpsStatus').style.display  = 'none';
+  // Mostra il pulsante salva GPX se la traccia ha abbastanza punti
+  if (gpsTrack.length >= 5) document.getElementById('btnSaveGPX').style.display = 'inline-block';
   // Ridisegna la mappa senza il dot
   if (routeCoords.length > 1) drawMap(routeCoords, routeColor, null, routeSegments);
 }
@@ -1859,7 +1918,9 @@ function onGPSUpdate(pos) {
   const { latitude: lat, longitude: lon, accuracy } = pos.coords;
   const now = pos.timestamp || Date.now();
 
-  // Mantieni finestra scorrevole di 45 secondi
+  // Traccia completa (per export GPX)
+  gpsTrack.push({ lat, lon, alt: pos.coords.altitude, time: now });
+  // Mantieni finestra scorrevole di 45 secondi (per il calcolo del passo)
   gpsHistory.push({ lat, lon, time: now });
   const cutoff = now - 45000;
   while (gpsHistory.length > 1 && gpsHistory[0].time < cutoff) gpsHistory.shift();
@@ -1920,6 +1981,38 @@ function onGPSUpdate(pos) {
   // Aggiorna mappa con dot live
   drawMap(routeCoords, routeColor, { lat, lon, accuracy }, routeSegments);
   updateTicker();
+}
+
+function saveGPXTrack() {
+  if (!gpsTrack.length) return;
+  const now  = new Date();
+  const name = 'Attivita_' + now.toISOString().slice(0, 10);
+  const trkpts = gpsTrack.map(p => {
+    const t   = new Date(p.time).toISOString();
+    const ele = (p.alt != null && !isNaN(p.alt))
+      ? `\n        <ele>${p.alt.toFixed(1)}</ele>` : '';
+    return `      <trkpt lat="${p.lat.toFixed(7)}" lon="${p.lon.toFixed(7)}">${ele}\n        <time>${t}</time>\n      </trkpt>`;
+  }).join('\n');
+  const gpx =
+`<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Strava Music Pacer"
+  xmlns="http://www.topografix.com/GPX/1/1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata><name>${name}</name><time>${now.toISOString()}</time></metadata>
+  <trk>
+    <name>${name}</name>
+    <trkseg>
+${trkpts}
+    </trkseg>
+  </trk>
+</gpx>`;
+  const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name + '.gpx';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 function onGPSError(err) {
