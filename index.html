@@ -232,6 +232,32 @@
       transition: background 0.2s;
     }
     .btn-save-gpx:hover { background: rgba(52,152,219,0.28); }
+    .btn-hr {
+      padding: 11px 22px;
+      background: rgba(231,76,60,0.12);
+      color: #e5534b;
+      border: 1px solid rgba(231,76,60,0.3);
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-hr.connected { background: rgba(231,76,60,0.25); border-color: rgba(231,76,60,0.6); }
+    .btn-hr:hover { background: rgba(231,76,60,0.24); }
+    @keyframes hb { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28)} }
+    .hb-pulse { display:inline-block; animation: hb 0.75s ease-in-out infinite; }
+    #hrBar {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(231,76,60,0.09);
+      border: 1px solid rgba(231,76,60,0.28);
+      font-size: .88rem;
+      margin-bottom: 16px;
+    }
     .live-status {
       padding: 10px 14px;
       border-radius: 8px;
@@ -777,6 +803,17 @@
         <button class="btn-run" id="btnStartRun" onclick="startLiveRun()">▶ Avvia Corsa</button>
         <button class="btn-stop" id="btnStopRun" onclick="stopLiveRun()" style="display:none">■ Ferma</button>
         <button class="btn-save-gpx" id="btnSaveGPX" onclick="saveGPXTrack()" style="display:none">💾 Salva GPX</button>
+        <button class="btn-hr" id="btnHR" onclick="connectHR()">♥ BLE Cardio</button>
+      </div>
+
+      <!-- Barra frequenza cardiaca BLE -->
+      <div id="hrBar">
+        <span class="hb-pulse">❤️</span>
+        <span id="hrBPM" style="font-size:1.4rem;font-weight:700;color:#e5534b">—</span>
+        <span style="color:#888;font-size:.8rem">bpm</span>
+        <span id="hrZone" style="font-size:.8rem;flex:1"></span>
+        <span id="hrDevName" style="font-size:.75rem;color:#666"></span>
+        <button onclick="disconnectHR()" style="background:none;border:none;color:#888;cursor:pointer;font-size:.82rem;padding:2px 8px" title="Disconnetti">&#10005; Disconnetti</button>
       </div>
 
       <div id="liveStatsPanel" style="display:none">
@@ -1675,6 +1712,8 @@ let liveDiffKey      = null;
 let liveWatchId      = null;
 let gpsHistory       = []; // { lat, lon, time } — finestra 45s per il passo
 let gpsTrack         = []; // { lat, lon, alt, time } — traccia completa da esportare
+let _hrDevice        = null; // BLE heart rate device
+let _hrChar          = null; // BLE HR measurement characteristic
 let liveMapTimer     = null;
 let routeElevations  = []; // elevation per coord (null = no data)
 let routeSegments    = []; // pre-computed gradient segments
@@ -1981,6 +2020,68 @@ function onGPSUpdate(pos) {
   // Aggiorna mappa con dot live
   drawMap(routeCoords, routeColor, { lat, lon, accuracy }, routeSegments);
   updateTicker();
+}
+
+// ─── HEART RATE BLE ─────────────────────────────────────────────────────────────────────
+async function connectHR() {
+  if (!navigator.bluetooth) {
+    alert('Web Bluetooth non supportato.\nUsa Chrome o Edge su Android / Windows / macOS.');
+    return;
+  }
+  // Se già connesso, disconnetti
+  if (_hrDevice) { disconnectHR(); return; }
+  try {
+    _hrDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ services: ['heart_rate'] }]
+    });
+    _hrDevice.addEventListener('gattserverdisconnected', onHRDisconnected);
+    const server  = await _hrDevice.gatt.connect();
+    const service = await server.getPrimaryService('heart_rate');
+    _hrChar = await service.getCharacteristic('heart_rate_measurement');
+    await _hrChar.startNotifications();
+    _hrChar.addEventListener('characteristicvaluechanged', _onHRValue);
+    const btn = document.getElementById('btnHR');
+    btn.classList.add('connected');
+    btn.textContent = '\u2665 ' + (_hrDevice.name || 'Connesso');
+    document.getElementById('hrDevName').textContent = _hrDevice.name || '';
+    document.getElementById('hrBar').style.display = 'flex';
+  } catch (err) {
+    if (err.name !== 'NotFoundError') // NotFoundError = utente ha annullato il picker
+      alert('Errore connessione BLE: ' + err.message);
+    _hrDevice = null;
+  }
+}
+
+function disconnectHR() {
+  if (_hrDevice && _hrDevice.gatt.connected) _hrDevice.gatt.disconnect();
+  onHRDisconnected();
+}
+
+function onHRDisconnected() {
+  _hrDevice = null; _hrChar = null;
+  const btn = document.getElementById('btnHR');
+  btn.classList.remove('connected');
+  btn.textContent = '\u2665 BLE Cardio';
+  document.getElementById('hrBar').style.display = 'none';
+  document.getElementById('hrBPM').textContent = '\u2014';
+}
+
+function _onHRValue(e) {
+  const dv    = e.target.value;
+  const flags = dv.getUint8(0);
+  const hr    = (flags & 0x01) ? dv.getUint16(1, true) : dv.getUint8(1);
+  document.getElementById('hrBPM').textContent = hr;
+  // Zona (max HR approssimativo 190 bpm)
+  const pct = hr / 190 * 100;
+  let zone, color;
+  if      (pct < 60) { zone = 'Z1 Recupero';  color = '#888'; }
+  else if (pct < 70) { zone = 'Z2 Facile';    color = '#2ecc71'; }
+  else if (pct < 80) { zone = 'Z3 Aerobico';  color = '#3498db'; }
+  else if (pct < 90) { zone = 'Z4 Soglia';    color = '#f39c12'; }
+  else               { zone = 'Z5 Massimale'; color = '#e74c3c'; }
+  const z = document.getElementById('hrZone');
+  z.textContent = zone;
+  z.style.color = color;
 }
 
 function saveGPXTrack() {
