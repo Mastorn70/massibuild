@@ -23,7 +23,10 @@
       font-family: 'Segoe UI', system-ui, sans-serif;
       background: var(--dark);
       color: var(--text);
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     header {
@@ -38,7 +41,9 @@
     header h1 { font-size: 1.6rem; font-weight: 700; color: white; }
     header p  { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
 
-    main { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+    /* APP SHELL */
+    #appShell { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+    #uploadWrap { flex: 1; overflow-y: auto; padding: 32px 20px; max-width: 900px; margin: 0 auto; width: 100%; }
 
     /* UPLOAD AREA */
     .upload-zone {
@@ -71,7 +76,68 @@
     .btn-upload:hover { background: #e63900; transform: scale(1.03); }
 
     /* STATS CARDS */
-    #results { display: none; margin-top: 36px; flex-direction: column; }
+    #results { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+
+    /* ─── TAB NAVIGATION ─── */
+    #mainNav, #uploadNav {
+      flex-shrink: 0; display: flex; align-items: center;
+      background: rgba(10,12,20,0.97);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 0 12px; height: 48px;
+    }
+    #uploadNav { display: none; } /* hidden until upload screen is active */
+    #mainNav .tab-nav, #uploadNav .tab-nav {
+      padding: 0 16px; height: 100%; background: none; border: none;
+      border-bottom: 3px solid transparent; color: #888; cursor: pointer;
+      font-size: .88rem; font-weight: 600;
+      transition: color .15s, border-color .15s; white-space: nowrap;
+    }
+    #mainNav .tab-nav:hover, #uploadNav .tab-nav:hover { color: #ddd; }
+    #mainNav .tab-nav.active, #uploadNav .tab-nav.active { color: var(--orange); border-bottom-color: var(--orange); }
+    #mainNav .nav-spacer, #uploadNav .nav-spacer { flex: 1; }
+    #mainNav .btn-change-gpx, #uploadNav .btn-change-gpx {
+      padding: 5px 13px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.14); color: #aaa; border-radius: 20px;
+      font-size: .78rem; cursor: pointer; transition: background .15s;
+    }
+    #mainNav .btn-change-gpx:hover, #uploadNav .btn-change-gpx:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+    /* ─── TAB PANELS ─── */
+    .tab-panels { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+    .tab-panel   { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; display: none; padding: 20px; }
+    .tab-panel.active { display: block; }
+    /* Map stays fixed while desktop panel scrolls */
+    .pcol-left .map-section { position: sticky; top: 0; z-index: 10; }
+
+    /* ─── PERCORSO 2-COL LAYOUT (desktop ≥900 px) ─── */
+    @media (min-width: 900px) {
+      .tab-panel { padding: 0; }
+      #panelMusica { padding: 28px; max-width: 860px; margin: 0 auto; }
+      .percorso-wrap { display: flex; flex-direction: row; height: 100%; overflow: hidden; }
+      .pcol-left  { flex: 1; overflow-y: auto; padding: 20px; min-width: 0; }
+      .pcol-right { width: 400px; flex-shrink: 0; overflow-y: auto; padding: 20px; border-left: 1px solid rgba(255,255,255,0.07); }
+      /* Corsa 2-col layout */
+      .corsa-wrap { display: flex; flex-direction: row; height: 100%; overflow: hidden; }
+      .ccol-left  { flex: 1; overflow-y: auto; padding: 20px; min-width: 0; }
+      .ccol-right { width: 380px; flex-shrink: 0; overflow-y: auto; padding: 20px; border-left: 1px solid rgba(255,255,255,0.07); }
+      .ccol-left .map-section { position: sticky; top: 0; z-index: 10; }
+    }
+    @media (max-width: 899px) {
+      /* Flatten the two columns — children become direct flex items of percorso-wrap */
+      .percorso-wrap  { display: flex; flex-direction: column; padding: 16px 16px 60px; }
+      .pcol-left, .pcol-right { display: contents; }
+      /* Visual order: map (sticky) → cue panel → stats → difficulty → chart → segments */
+      #mapSection    { order: 1; position: sticky; top: 0; z-index: 10; }
+      #cuePtsPanel   { order: 2; }
+      #statsGrid     { order: 3; }
+      #diffSection   { order: 4; }
+      .chart-section { order: 5; }
+      #segmentPanel  { order: 6; }
+      /* Corsa layout mobile */
+      .corsa-wrap { display: flex; flex-direction: column; padding: 16px 16px 60px; }
+      .ccol-left, .ccol-right { min-width: 0; }
+      #liveMapSection { position: sticky; top: 0; z-index: 10; }
+    }
 
     .stats-grid {
       display: grid;
@@ -151,6 +217,7 @@
     .map-section h3 { font-size: 0.95rem; color: #888; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
     #routeMap { border-radius: 10px; overflow: hidden; display: block; width: 100%; cursor: grab; }
     #routeMap:active { cursor: grabbing; }
+    #liveRouteMap { border-radius: 10px; display: block; width: 100%; }
     #mapZoomCtrl {
       position: absolute; top: 52px; right: 12px;
       display: flex; flex-direction: column; gap: 4px; z-index: 10;
@@ -516,80 +583,37 @@
 
     /* ── MOBILE LAYOUT ── */
     @media (max-width: 768px) {
-      /* Fixed slim header */
-      header {
-        position: fixed;
-        top: 0; left: 0; right: 0;
-        z-index: 300;
-        padding: 10px 16px;
-        gap: 10px;
-      }
+      /* Slim header (in-flow, not fixed) */
+      header { padding: 10px 16px; gap: 10px; }
       header svg { width: 26px; height: 26px; }
       header h1  { font-size: 1rem; }
       header p   { display: none; }
 
-      /* Push content below header + bottom ticker */
-      body { padding-top: 58px; padding-bottom: 56px; }
-      main { max-width: 100%; padding: 0; }
-
       /* Upload zone */
-      .upload-zone { margin: 12px; padding: 32px 16px; }
+      #uploadWrap { padding: 12px; }
+      .upload-zone { padding: 32px 16px; }
 
-      /* Results as flex column — allows CSS order reordering */
-      #results { margin-top: 0; }
+      /* Tab nav */
+      #mainNav { height: 44px; }
+      #mainNav .tab-nav { padding: 0 11px; font-size: .78rem; }
 
-      /* MAP: sticky below header, first in visual order */
-      .map-section {
-        order: -2;
-        position: sticky;
-        top: 58px;
-        z-index: 200;
-        border-radius: 0;
-        margin: 0;
-        padding: 10px 12px;
-        border-left: none;
-        border-right: none;
-        border-top: none;
-        border-bottom: 1px solid rgba(255,255,255,0.07);
-      }
-      .map-section h3 { font-size: .78rem; margin-bottom: 8px; }
-      #routeMap { max-height: 280px; }
+      /* Map */
+      #routeMap { max-height: 240px; }
 
-      /* STATS: second slot */
-      .stats-grid {
-        order: -1;
-        grid-template-columns: repeat(2, 1fr);
-        padding: 12px;
-        gap: 10px;
-        margin-bottom: 0;
-      }
+      /* Stats grid */
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .stat-card { padding: 12px 10px; }
       .stat-card .value { font-size: 1.3rem; }
 
-      /* Difficulty, chart, playlist, live, mymusic — full bleed */
-      .difficulty-section {
-        flex-direction: column;
-        text-align: center;
-        border-radius: 0;
-        margin-bottom: 0;
-        border-left: none;
-        border-right: none;
-        padding: 16px 12px;
-      }
-      .chart-section,
-      .playlist-section,
-      .live-section,
-      .mymusic-section {
-        border-radius: 0;
-        margin-bottom: 0;
-        border-left: none;
-        border-right: none;
-        border-top: 1px solid rgba(255,255,255,0.05);
-      }
+      /* Difficulty */
+      .difficulty-section { flex-direction: column; text-align: center; }
 
       /* Playlist & live grids */
       .playlist-grid { grid-template-columns: 1fr; }
       .live-grid { grid-template-columns: repeat(2, 1fr); }
+
+      /* Extra padding to clear bottom ticker */
+      .tab-panel { padding-bottom: 60px; }
 
       /* ── Bottom ticker bar ── */
       #mobileTicker {
@@ -637,201 +661,255 @@
   </div>
 </header>
 
-<main>
+<div id="appShell">
 
-  <!-- UPLOAD -->
-  <div class="upload-zone" id="dropZone">
-    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM8 16.5v-5l1.5 1.5 1-1L8 9.5l-2.5 2.5 1 1L8 11.5v5h.01H8zm5.5 0v-5l1.5 1.5 1-1-2.5-2.5-2.5 2.5 1 1 1.5-1.5v5h.01H13.5z"/></svg>
-    <h2>Trascina il file GPX qui</h2>
-    <p>Esporta la tua attività da Strava → Opzioni → Esporta GPX</p>
-    <button class="btn-upload" onclick="document.getElementById('fileInput').click()">Scegli file GPX</button>
-    <input type="file" id="fileInput" accept=".gpx,.xml" />
+  <!-- Upload nav bar (always visible on upload screen) -->
+  <nav id="uploadNav">
+    <span style="font-size:.85rem;color:#666;padding:0 4px">&#128196; Carica GPX</span>
+    <div class="nav-spacer"></div>
+    <button id="btnBackToApp" class="btn-change-gpx" style="display:none" onclick="returnToApp()">← Torna all'app</button>
+  </nav>
+
+  <!-- ──── UPLOAD VIEW ──── -->
+  <div id="uploadWrap">
+    <div class="upload-zone" id="dropZone">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM8 16.5v-5l1.5 1.5 1-1L8 9.5l-2.5 2.5 1 1L8 11.5v5h.01H8zm5.5 0v-5l1.5 1.5 1-1-2.5-2.5-2.5 2.5 1 1 1.5-1.5v5h.01H13.5z"/></svg>
+      <h2>Trascina il file GPX qui</h2>
+      <p>Esporta la tua attività da Strava → Opzioni → Esporta GPX</p>
+      <button class="btn-upload" onclick="document.getElementById('fileInput').click()">Scegli file GPX</button>
+      <input type="file" id="fileInput" accept=".gpx,.xml" />
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+    <div class="loader" id="loader"><div class="spinner"></div><p style="color:#888;font-size:.9rem">Analisi percorso in corso…</p></div>
   </div>
 
-  <div class="error-box" id="errorBox"></div>
-  <div class="loader" id="loader"><div class="spinner"></div><p style="color:#888;font-size:.9rem">Analisi percorso in corso…</p></div>
-
-  <!-- RESULTS -->
+  <!-- ──── APP VIEW ──── -->
   <div id="results">
 
-    <div class="stats-grid" id="statsGrid"></div>
+    <!-- Tab navigation -->
+    <nav id="mainNav">
+      <button class="tab-nav active" id="tnPercorso" onclick="switchTab('percorso')">🗺 Percorso</button>
+      <button class="tab-nav" id="tnMusica"   onclick="switchTab('musica')">🎵 Musica</button>
+      <button class="tab-nav" id="tnCorsa"    onclick="switchTab('corsa')">🏃 Corsa</button>
+      <div class="nav-spacer"></div>
+      <button class="btn-change-gpx" onclick="backToUpload()">📂 Cambia GPX</button>
+    </nav>
 
-    <div class="difficulty-section" id="diffSection">
-      <div class="diff-icon" id="diffIcon"></div>
-      <div class="diff-info" style="flex:1">
-        <h3>Difficoltà del percorso</h3>
-        <span class="diff-badge" id="diffBadge"></span>
-        <p class="diff-desc" id="diffDesc"></p>
-        <div class="progress-bar-wrap">
-          <div class="progress-bar-fill" id="diffBar"></div>
-        </div>
-      </div>
-    </div>
+    <!-- Tab panels -->
+    <div class="tab-panels">
 
-    <div class="chart-section">
-      <h3>&#9650; Profilo altimetrico</h3>
-      <canvas id="elevChart"></canvas>
-    </div>
+      <!-- ── PERCORSO ── -->
+      <div class="tab-panel active" id="panelPercorso">
+        <div class="percorso-wrap">
 
-    <div class="segment-panel" id="segmentPanel" style="display:none"></div>
+          <!-- LEFT: map + cue points -->
+          <div class="pcol-left">
+            <div class="map-section" id="mapSection">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <h3 style="margin:0">&#128205; Percorso su mappa</h3>
+                <button class="btn-cue-edit" id="btnCueEdit" onclick="toggleMapEditMode()">&#9998; Cue</button>
+              </div>
+              <canvas id="routeMap"></canvas>
+              <div class="map-legend">
+                <span><i style="background:#2ecc71"></i> Partenza</span>
+                <span><i id="endDotColor" style="background:var(--orange)"></i> Arrivo</span>
+                <span><i style="background:var(--orange);border-radius:3px"></i> Cue change</span>
+              </div>
+              <!-- Zoom controls -->
+              <div id="mapZoomCtrl">
+                <button onclick="adjustMapZoom(1.45)" title="Zoom avanti">+</button>
+                <button onclick="adjustMapZoom(1/1.45)" title="Zoom indietro">−</button>
+                <button onclick="resetMapZoom()" title="Vista completa">↺</button>
+              </div>
+              <div id="mapZoomLabel">100%</div>
+            </div>
 
-    <div class="map-section" id="mapSection">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <h3 style="margin:0">&#128205; Percorso su mappa</h3>
-        <button class="btn-cue-edit" id="btnCueEdit" onclick="toggleMapEditMode()">&#9998; Cue</button>
-      </div>
-      <canvas id="routeMap"></canvas>
-      <div class="map-legend">
-        <span><i style="background:#2ecc71"></i> Partenza</span>
-        <span><i id="endDotColor" style="background:var(--orange)"></i> Arrivo</span>
-        <span><i style="background:var(--orange);border-radius:3px"></i> Cue change</span>
-      </div>
-      <!-- Zoom controls -->
-      <div id="mapZoomCtrl">
-        <button onclick="adjustMapZoom(1.45)" title="Zoom avanti">+</button>
-        <button onclick="adjustMapZoom(1/1.45)" title="Zoom indietro">−</button>
-        <button onclick="resetMapZoom()" title="Vista completa">↺</button>
-      </div>
-      <div id="mapZoomLabel">100%</div>
-    </div>
+            <!-- CUE POINTS -->
+            <div class="cue-panel" id="cuePtsPanel" style="display:none">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+                <span style="font-size:1.3rem">&#128205;</span>
+                <div style="flex:1">
+                  <div style="font-weight:700;font-size:.95rem">Cue Points &mdash; Cambio canzone</div>
+                  <div style="font-size:.78rem;color:#888">Posiziona punti sul percorso &middot; assegna una canzone &middot; la app cambia brano in automatico durante la corsa</div>
+                </div>
+              </div>
+              <div id="editModeHint" style="display:none;background:rgba(252,76,2,0.1);border:1px solid rgba(252,76,2,0.3);border-radius:8px;padding:8px 12px;font-size:.82rem;color:#fc4c02;margin-bottom:12px">
+                &#128205; Clicca sul percorso per aggiungere un punto di cambio &middot; premi di nuovo <strong>Cue</strong> per uscire dalla modalit&agrave; edit
+              </div>
+              <div id="cuePtsList"></div>
+            </div>
+          </div><!-- /pcol-left -->
 
-    <!-- CUE POINTS -->
-    <div class="cue-panel" id="cuePtsPanel" style="display:none">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-        <span style="font-size:1.3rem">&#128205;</span>
-        <div style="flex:1">
-          <div style="font-weight:700;font-size:.95rem">Cue Points &mdash; Cambio canzone</div>
-          <div style="font-size:.78rem;color:#888">Posiziona punti sul percorso &middot; assegna una canzone &middot; la app cambia brano in automatico durante la corsa</div>
-        </div>
-      </div>
-      <div id="editModeHint" style="display:none;background:rgba(252,76,2,0.1);border:1px solid rgba(252,76,2,0.3);border-radius:8px;padding:8px 12px;font-size:.82rem;color:#fc4c02;margin-bottom:12px">
-        &#128205; Clicca sul percorso per aggiungere un punto di cambio &middot; premi di nuovo <strong>Cue</strong> per uscire dalla modalit&agrave; edit
-      </div>
-      <div id="cuePtsList"></div>
-    </div>
+          <!-- RIGHT: stats + difficulty + chart + segments -->
+          <div class="pcol-right">
+            <div class="stats-grid" id="statsGrid"></div>
 
-    <!-- MY MUSIC -->
-    <div class="mymusic-section" id="myMusicSection" style="display:none">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-        <span style="font-size:1.8rem">📁</span>
-        <div>
-          <div style="font-size:1rem;font-weight:700">La Tua Musica</div>
-          <div style="font-size:0.82rem;color:#888;margin-top:2px">Analizza i tuoi file audio · rileva il BPM · vedi quali corrispondono al percorso</div>
-        </div>
-      </div>
+            <div class="difficulty-section" id="diffSection">
+              <div class="diff-icon" id="diffIcon"></div>
+              <div class="diff-info" style="flex:1">
+                <h3>Difficoltà del percorso</h3>
+                <span class="diff-badge" id="diffBadge"></span>
+                <p class="diff-desc" id="diffDesc"></p>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar-fill" id="diffBar"></div>
+                </div>
+              </div>
+            </div>
 
-      <!-- Folder / file picker -->
-      <div class="mymusic-drop" id="musicDropZone">
-        <div style="font-size:2.2rem">🎵</div>
-        <strong>Carica la tua musica</strong>
-        <p>Trascina qui una cartella (desktop) · MP3 · AAC · OGG · WAV · FLAC · M4A</p>
-        <p style="margin-top:4px;color:#666;font-size:.78rem">Analisi BPM locale — nessun file viene caricato su internet</p>
-        <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap">
-          <button onclick="event.stopPropagation();document.getElementById('musicFileInput').click()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem">📂 Seleziona cartella <span style="color:#888;font-size:.75rem">(desktop)</span></button>
-          <button onclick="event.stopPropagation();document.getElementById('musicFileInputMulti').click()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem">🎵 Seleziona file <span style="color:#888;font-size:.75rem">(mobile)</span></button>
-          <button onclick="event.stopPropagation();document.getElementById('bpmCacheInput').click()" style="background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.22);color:#aaa;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem" title="Carica un file bpm-analisi.json salvato per saltare la ri-analisi">&#9889; Carica analisi .json</button>
-          <input type="file" id="bpmCacheInput" accept=".json,application/json" onchange="loadBpmCacheFile(this)" style="display:none" />
-          <button onclick="event.stopPropagation();document.getElementById('bpmCacheInput').click()" style="background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.22);color:#aaa;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem" title="Carica un file bpm-analisi.json salvato per saltare la ri-analisi">&#9889; Carica analisi .json</button>
-          <input type="file" id="bpmCacheInput" accept=".json,application/json" onchange="loadBpmCacheFile(this)" style="display:none" />
-        </div>
-        <input type="file" id="musicFileInput" accept="audio/*" webkitdirectory />
-        <input type="file" id="musicFileInputMulti" accept="audio/*" multiple />
-      </div>
+            <div class="chart-section">
+              <h3>&#9650; Profilo altimetrico</h3>
+              <canvas id="elevChart"></canvas>
+            </div>
 
-      <!-- Cache status bar -->
-      <div id="cacheStatusBar" style="display:none;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);border-radius:8px;padding:9px 14px;margin-top:10px;font-size:.84rem;color:#2ecc71"></div>
+            <div class="segment-panel" id="segmentPanel" style="display:none"></div>
+          </div><!-- /pcol-right -->
 
-      <!-- Folder status bar -->
-      <div id="folderStatus" style="display:none;background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:.84rem;color:#aaa"></div>
+        </div><!-- /percorso-wrap -->
+      </div><!-- /panelPercorso -->
 
-      <div class="analysis-progress" id="analysisProgress">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <p id="analysisProgressLabel" style="margin:0">Analisi…</p>
-          <button onclick="stopAnalysis()" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:.8rem">■ Interrompi</button>
-        </div>
-        <div class="analysis-progress-bar"><div class="analysis-progress-fill" id="analysisProgressFill" style="width:0%"></div></div>
-      </div>
+      <!-- ── MUSICA ── -->
+      <div class="tab-panel" id="panelMusica">
+        <div class="mymusic-section" id="myMusicSection">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+            <span style="font-size:1.8rem">📁</span>
+            <div>
+              <div style="font-size:1rem;font-weight:700">La Tua Musica</div>
+              <div style="font-size:0.82rem;color:#888;margin-top:2px">Analizza i tuoi file audio · rileva il BPM · vedi quali corrispondono al percorso</div>
+            </div>
+          </div>
 
-      <div class="music-results" id="musicResults">
-        <!-- Playlist compatibile -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-          <span id="musicResultsSummary" style="font-size:.88rem;color:#aaa"></span>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn-dl" onclick="exportBpmAnalysis()" title="Salva i BPM analizzati — ricaricalo la prossima volta per saltare l'analisi">&#128190; Salva analisi .json</button>
-            <button class="btn-dl" onclick="exportBpmAnalysis()" title="Salva i BPM analizzati — ricaricalo la prossima volta per saltare l'analisi">&#128190; Salva analisi .json</button>
-            <button class="btn-dl" id="btnDlLocalM3u" onclick="downloadLocalM3U(false)">⬇ Playlist compatibile .m3u</button>
-            <button class="btn-dl" onclick="downloadLocalM3U(true)">⬇ Tutte .m3u</button>
+          <!-- Folder / file picker -->
+          <div class="mymusic-drop" id="musicDropZone">
+            <div style="font-size:2.2rem">🎵</div>
+            <strong>Carica la tua musica</strong>
+            <p>Trascina qui una cartella (desktop) · MP3 · AAC · OGG · WAV · FLAC · M4A</p>
+            <p style="margin-top:4px;color:#666;font-size:.78rem">Analisi BPM locale — nessun file viene caricato su internet</p>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap">
+              <button onclick="event.stopPropagation();document.getElementById('musicFileInput').click()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem">📂 Seleziona cartella <span style="color:#888;font-size:.75rem">(desktop)</span></button>
+              <button onclick="event.stopPropagation();document.getElementById('musicFileInputMulti').click()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem">🎵 Seleziona file <span style="color:#888;font-size:.75rem">(mobile)</span></button>
+              <button onclick="event.stopPropagation();document.getElementById('bpmCacheInput').click()" style="background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.22);color:#aaa;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.88rem" title="Carica un file bpm-analisi.json salvato per saltare la ri-analisi">&#9889; Carica analisi .json</button>
+              <input type="file" id="bpmCacheInput" accept=".json,application/json" onchange="loadBpmCacheFile(this)" style="display:none" />
+            </div>
+            <input type="file" id="musicFileInput" accept="audio/*" webkitdirectory />
+            <input type="file" id="musicFileInputMulti" accept="audio/*" multiple />
+          </div>
+
+          <!-- Cache status bar -->
+          <div id="cacheStatusBar" style="display:none;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);border-radius:8px;padding:9px 14px;margin-top:10px;font-size:.84rem;color:#2ecc71"></div>
+
+          <!-- Folder status bar -->
+          <div id="folderStatus" style="display:none;background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:.84rem;color:#aaa"></div>
+
+          <div class="analysis-progress" id="analysisProgress">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <p id="analysisProgressLabel" style="margin:0">Analisi…</p>
+              <button onclick="stopAnalysis()" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:.8rem">■ Interrompi</button>
+            </div>
+            <div class="analysis-progress-bar"><div class="analysis-progress-fill" id="analysisProgressFill" style="width:0%"></div></div>
+          </div>
+
+          <div class="music-results" id="musicResults">
+            <!-- Playlist compatibile -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+              <span id="musicResultsSummary" style="font-size:.88rem;color:#aaa"></span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn-dl" onclick="exportBpmAnalysis()" title="Salva i BPM analizzati — ricaricalo la prossima volta per saltare l'analisi">&#128190; Salva analisi .json</button>
+                <button class="btn-dl" id="btnDlLocalM3u" onclick="downloadLocalM3U(false)">⬇ Playlist compatibile .m3u</button>
+                <button class="btn-dl" onclick="downloadLocalM3U(true)">⬇ Tutte .m3u</button>
+              </div>
+            </div>
+
+            <!-- Tabs -->
+            <div style="display:flex;gap:6px;margin-bottom:14px">
+              <button class="tab-btn active" id="tabCompat" onclick="switchMusicTab('compat', this)">✅ Compatibili <span id="compatCount"></span></button>
+              <button class="tab-btn" id="tabAll" onclick="switchMusicTab('all', this)">Tutte le canzoni <span id="allCount"></span></button>
+            </div>
+
+            <div id="musicResultsList"></div>
+
+            <div class="mini-player" id="miniPlayer">
+              <button class="mr-play playing" id="miniPlayBtn" onclick="toggleMiniPlay()">⏸</button>
+              <div class="mini-player-info">
+                <div class="mpt" id="miniPlayerName">—</div>
+                <div class="mpb" id="miniPlayerBpm">—</div>
+              </div>
+              <audio id="audioPlayer" onended="onAudioNextOrEnd()"></audio>
+            </div>
           </div>
         </div>
+      </div><!-- /panelMusica -->
 
-        <!-- Tabs -->
-        <div style="display:flex;gap:6px;margin-bottom:14px">
-          <button class="tab-btn active" id="tabCompat" onclick="switchMusicTab('compat', this)">✅ Compatibili <span id="compatCount"></span></button>
-          <button class="tab-btn" id="tabAll" onclick="switchMusicTab('all', this)">Tutte le canzoni <span id="allCount"></span></button>
-        </div>
+      <!-- ── CORSA ── -->
+      <div class="tab-panel" id="panelCorsa">
+        <div class="corsa-wrap">
 
-        <div id="musicResultsList"></div>
-
-        <div class="mini-player" id="miniPlayer">
-          <button class="mr-play playing" id="miniPlayBtn" onclick="toggleMiniPlay()">⏸</button>
-          <div class="mini-player-info">
-            <div class="mpt" id="miniPlayerName">—</div>
-            <div class="mpb" id="miniPlayerBpm">—</div>
+          <!-- LEFT: mappa live -->
+          <div class="ccol-left">
+            <div class="map-section" id="liveMapSection">
+              <h3>📍 Posizione live</h3>
+              <canvas id="liveRouteMap"></canvas>
+            </div>
           </div>
-          <audio id="audioPlayer" onended="onAudioNextOrEnd()"></audio>
+
+          <!-- RIGHT: controlli + metriche -->
+          <div class="ccol-right">
+            <div class="live-section" id="liveSection">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+                <span style="font-size:2rem">🏃</span>
+                <div style="flex:1">
+                  <div style="font-size:1rem;font-weight:700">Modalità Corsa Live</div>
+                  <div style="font-size:0.82rem;color:#888;margin-top:2px">GPS in tempo reale · posizione sul percorso · passo attuale vs target</div>
+                </div>
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:.8rem;color:#aaa;flex-shrink:0">
+                  <input type="checkbox" id="autoDJToggle" checked onchange="autoDJEnabled=this.checked;lastAutoBPM=null" style="accent-color:var(--orange);width:14px;height:14px">
+                  Auto-DJ
+                </label>
+              </div>
+
+              <div id="liveGpsStatus" class="live-status" style="display:none"></div>
+
+              <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+                <button class="btn-run" id="btnStartRun" onclick="startLiveRun()">▶ Avvia Corsa</button>
+                <button class="btn-stop" id="btnStopRun" onclick="stopLiveRun()" style="display:none">■ Ferma</button>
+                <button class="btn-save-gpx" id="btnSaveGPX" onclick="saveGPXTrack()" style="display:none">💾 Salva GPX</button>
+                <button class="btn-hr" id="btnHR" onclick="connectHR()">♥ BLE Cardio</button>
+              </div>
+
+              <!-- Barra frequenza cardiaca BLE -->
+              <div id="hrBar">
+                <span class="hb-pulse">❤️</span>
+                <span id="hrBPM" style="font-size:1.4rem;font-weight:700;color:#e5534b">—</span>
+                <span style="color:#888;font-size:.8rem">bpm</span>
+                <span id="hrZone" style="font-size:.8rem;flex:1"></span>
+                <span id="hrDevName" style="font-size:.75rem;color:#666"></span>
+                <button onclick="disconnectHR()" style="background:none;border:none;color:#888;cursor:pointer;font-size:.82rem;padding:2px 8px" title="Disconnetti">&#10005; Disconnetti</button>
+              </div>
+
+              <div id="liveStatsPanel" style="display:none">
+                <div class="live-grid">
+                  <div class="live-card"><div class="lv" id="lvDistCovered">—</div><div class="ll">Percorsa</div></div>
+                  <div class="live-card"><div class="lv" id="lvDistRemain">—</div><div class="ll">Rimanente</div></div>
+                  <div class="live-card"><div class="lv" id="lvProgress">—</div><div class="ll">Completato</div></div>
+                  <div class="live-card"><div class="lv" id="lvPaceCurrent">—</div><div class="ll">Passo attuale</div></div>
+                  <div class="live-card"><div class="lv" id="lvPaceTarget">—</div><div class="ll">Passo target</div></div>
+                  <div class="live-card"><div class="lv" id="lvAccuracy">—</div><div class="ll">Precisione GPS</div></div>
+                  <div class="live-card"><div class="lv" id="lvElapsed">—</div><div class="ll">Tempo</div></div>
+                  <div class="live-card"><div class="lv" id="lvHR" style="color:#e5534b">—</div><div class="ll">Cardio BPM</div></div>
+                </div>
+                <div class="progress-route-wrap"><div class="progress-route-fill" id="progressRouteFill" style="width:0%"></div></div>
+                <div class="pace-feedback" id="paceFeedback" style="display:none"></div>
+              </div>
+            </div>
+          </div>
+
         </div>
-      </div>
-    </div>
+      </div><!-- /panelCorsa -->
 
-    <!-- LIVE RUN -->
-    <div class="live-section" id="liveSection" style="display:none">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-        <span style="font-size:2rem">🏃</span>
-        <div style="flex:1">
-          <div style="font-size:1rem;font-weight:700">Modalità Corsa Live</div>
-          <div style="font-size:0.82rem;color:#888;margin-top:2px">GPS in tempo reale · posizione sul percorso · passo attuale vs target</div>
-        </div>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:.8rem;color:#aaa;flex-shrink:0">
-          <input type="checkbox" id="autoDJToggle" checked onchange="autoDJEnabled=this.checked;lastAutoBPM=null" style="accent-color:var(--orange);width:14px;height:14px">
-          Auto-DJ
-        </label>
-      </div>
+    </div><!-- /.tab-panels -->
+  </div><!-- /#results -->
 
-      <div id="liveGpsStatus" class="live-status" style="display:none"></div>
-
-      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-        <button class="btn-run" id="btnStartRun" onclick="startLiveRun()">▶ Avvia Corsa</button>
-        <button class="btn-stop" id="btnStopRun" onclick="stopLiveRun()" style="display:none">■ Ferma</button>
-        <button class="btn-save-gpx" id="btnSaveGPX" onclick="saveGPXTrack()" style="display:none">💾 Salva GPX</button>
-        <button class="btn-hr" id="btnHR" onclick="connectHR()">♥ BLE Cardio</button>
-      </div>
-
-      <!-- Barra frequenza cardiaca BLE -->
-      <div id="hrBar">
-        <span class="hb-pulse">❤️</span>
-        <span id="hrBPM" style="font-size:1.4rem;font-weight:700;color:#e5534b">—</span>
-        <span style="color:#888;font-size:.8rem">bpm</span>
-        <span id="hrZone" style="font-size:.8rem;flex:1"></span>
-        <span id="hrDevName" style="font-size:.75rem;color:#666"></span>
-        <button onclick="disconnectHR()" style="background:none;border:none;color:#888;cursor:pointer;font-size:.82rem;padding:2px 8px" title="Disconnetti">&#10005; Disconnetti</button>
-      </div>
-
-      <div id="liveStatsPanel" style="display:none">
-        <div class="live-grid">
-          <div class="live-card"><div class="lv" id="lvDistCovered">—</div><div class="ll">Percorsa</div></div>
-          <div class="live-card"><div class="lv" id="lvDistRemain">—</div><div class="ll">Rimanente</div></div>
-          <div class="live-card"><div class="lv" id="lvProgress">—</div><div class="ll">Completato</div></div>
-          <div class="live-card"><div class="lv" id="lvPaceCurrent">—</div><div class="ll">Passo attuale</div></div>
-          <div class="live-card"><div class="lv" id="lvPaceTarget">—</div><div class="ll">Passo target</div></div>
-          <div class="live-card"><div class="lv" id="lvAccuracy">—</div><div class="ll">Precisione GPS</div></div>
-        </div>
-        <div class="progress-route-wrap"><div class="progress-route-fill" id="progressRouteFill" style="width:0%"></div></div>
-        <div class="pace-feedback" id="paceFeedback" style="display:none"></div>
-      </div>
-    </div>
-
-  </div>
-</main>
+</div><!-- /#appShell -->
 
 <script>
 // ─── DIFFICULTY CONFIG ─────────────────────────────────────────────────────────
@@ -963,17 +1041,20 @@ function _drawTiles(ctx, projectFn, minLon, maxLon, minLat, maxLat) {
 }
 
 // ─── MAP (canvas self-contained, no external deps) ───────────────────────────
-function drawMap(coords, routeColor, livePos, segments) {
-  _lastDrawMapArgs = [coords, routeColor, livePos, segments];
-  const section = document.getElementById('mapSection');
+function drawMap(coords, routeColor, livePos, segments, _sec, _cvs) {
+  const sectionId = _sec || 'mapSection';
+  const canvasId  = _cvs || 'routeMap';
+  if (!_sec) _lastDrawMapArgs = [coords, routeColor, livePos, segments];
+  const section = document.getElementById(sectionId);
+  if (!section) return;
   // Sostituisci il canvas ad ogni caricamento
-  let canvas = document.getElementById('routeMap');
+  let canvas = document.getElementById(canvasId);
   const newCanvas = document.createElement('canvas');
-  newCanvas.id = 'routeMap';
-  canvas.replaceWith(newCanvas);
+  newCanvas.id = canvasId;
+  if (canvas) canvas.replaceWith(newCanvas); else section.appendChild(newCanvas);
   canvas = newCanvas;
 
-  const W = section.clientWidth - 40; // tolgo il padding della card
+  const W = Math.max(50, section.clientWidth - 40); // tolgo il padding della card
   const H = Math.round(W * 0.65);     // riquadro più alto
   canvas.width  = W;
   canvas.height = H;
@@ -1003,8 +1084,8 @@ function drawMap(coords, routeColor, livePos, segments) {
   }
   const offX = (W - drawW) / 2;
   const offY = (H - drawH) / 2;
-  // Store projection for map-click → lat/lon inverse mapping
-  mapProjection = { offX, offY, drawW, drawH, minLat, maxLat, minLon, spanLon, spanLat };
+  // Store projection for map-click → lat/lon inverse mapping (primary canvas only)
+  if (!_sec) mapProjection = { offX, offY, drawW, drawH, minLat, maxLat, minLon, spanLon, spanLat };
 
   function project([lat, lon]) {
     const x = offX + ((lon - minLon) / spanLon) * drawW;
@@ -1018,12 +1099,15 @@ function drawMap(coords, routeColor, livePos, segments) {
   ctx.roundRect(0, 0, W, H, 10);
   ctx.fill();
 
-  // Apply zoom/pan transform — clip to canvas so content doesn't bleed outside
+  // Apply zoom/pan transform — live canvas always at 1:1, primary canvas respects user zoom
+  const _zm = _sec ? 1 : mapZoom;
+  const _tx = _sec ? 0 : mapPan.x;
+  const _ty = _sec ? 0 : mapPan.y;
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, W, H);
   ctx.clip();
-  ctx.setTransform(mapZoom, 0, 0, mapZoom, mapPan.x, mapPan.y);
+  ctx.setTransform(_zm, 0, 0, _zm, _tx, _ty);
 
   // ── Mappa OSM ──
   _drawTiles(ctx, project, minLon, maxLon, minLat, maxLat);
@@ -1159,6 +1243,14 @@ function drawMap(coords, routeColor, livePos, segments) {
   ctx.font = '10px system-ui';
   ctx.textAlign = 'center';
   ctx.fillText(scaleLabel, sx + fixedBarPx / 2, sy - 6);
+
+  // Mirror to live map when this is the primary draw
+  if (!_sec) {
+    const _ls = document.getElementById('liveMapSection');
+    if (_ls && _ls.offsetParent !== null && _ls.clientWidth > 50) {
+      drawMap(coords, routeColor, livePos, segments, 'liveMapSection', 'liveRouteMap');
+    }
+  }
 }
 
 // ─── DIFFICULTY ───────────────────────────────────────────────────────────────
@@ -1325,13 +1417,13 @@ function showResults(data) {
   const target   = PACE_TARGETS[diff.key];
   document.getElementById('lvPaceTarget').textContent =
     fmtPace(target.min) + '–' + fmtPace(target.max);
-  document.getElementById('liveSection').style.display    = 'block';
-  document.getElementById('myMusicSection').style.display = 'block';
-  document.getElementById('cuePtsPanel').style.display    = 'block';
+  document.getElementById('cuePtsPanel').style.display = 'block';
   renderCuePts();
 
+  document.getElementById('uploadWrap').style.display = 'none';
+  document.getElementById('uploadNav').style.display  = 'none';
   document.getElementById('results').style.display = 'flex';
-  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+  switchTab('percorso');
   updateTicker();
 }
 
@@ -1505,6 +1597,7 @@ async function startAnalysis() {
   const label = document.getElementById('analysisProgressLabel');
   prog.style.display = 'block';
   document.getElementById('musicResults').style.display = 'none';
+  document.getElementById('musicDropZone').style.display = '';
 
   for (let i = 0; i < pendingMusicFiles.length; i++) {
     if (analysisAborted) break;
@@ -1617,6 +1710,7 @@ function renderMusicResults() {
     }).join('');
   }
   document.getElementById('musicResults').style.display = 'block';
+  document.getElementById('musicDropZone').style.display = 'none';
   if (routeSegments.length) renderSegmentPanel(routeSegments);
   updateTicker();
 }
@@ -1714,7 +1808,9 @@ let gpsHistory       = []; // { lat, lon, time } — finestra 45s per il passo
 let gpsTrack         = []; // { lat, lon, alt, time } — traccia completa da esportare
 let _hrDevice        = null; // BLE heart rate device
 let _hrChar          = null; // BLE HR measurement characteristic
+let _currentHR       = null; // ultimo valore BPM ricevuto (per salvare nella traccia)
 let liveMapTimer     = null;
+let liveStartTime    = null; // timestamp corsa avviata
 let routeElevations  = []; // elevation per coord (null = no data)
 let routeSegments    = []; // pre-computed gradient segments
 let autoDJEnabled    = true;
@@ -1813,8 +1909,12 @@ function bestSongForSegment(bpmMin, bpmMax) {
 // Divides the route into ~18 gradient segments
 function buildRouteSegments(coords, coordEles, cumDist) {
   if (coords.length < 4) return [];
-  const n    = coords.length;
-  const step = Math.max(3, Math.round(n / 18));
+  const n       = coords.length;
+  const totalKm = cumDist[n - 1] || 1;
+  // At most 8 segments; each segment at least ~800 m
+  const maxSegs = Math.min(8, Math.floor(totalKm / 0.8));
+  const numSegs = Math.max(2, maxSegs);
+  const step    = Math.max(3, Math.round(n / numSegs));
   const segs = [];
   for (let i = 0; i < n - 1; i += step) {
     const end = Math.min(i + step, n - 1);
@@ -1872,12 +1972,14 @@ function renderSegmentPanel(segments) {
   panel.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
       <span style="font-size:1.3rem">🗺️</span>
-      <div>
+      <div style="flex:1">
         <div style="font-weight:700;font-size:.95rem">Segmenti percorso</div>
         <div style="font-size:.78rem;color:#888">Pendenza · BPM consigliato${analyzedSongs.length ? ' · canzone suggerita dalla tua libreria' : ''}</div>
       </div>
+      <button id="btnSegToggle" onclick="toggleSegPanel()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#aaa;padding:4px 12px;border-radius:16px;font-size:.78rem;cursor:pointer">▼ Dettaglio</button>
     </div>
-    ${barHtml}${rowsHtml}`;
+    ${barHtml}
+    <div id="segRowsWrap" style="display:none">${rowsHtml}</div>`;
 }
 
 function nearestOnRoute(lat, lon) {
@@ -1920,6 +2022,7 @@ function startLiveRun() {
   gpsHistory  = [];
   gpsTrack     = [];
   lastAutoBPM  = null;
+  liveStartTime = Date.now();
   document.getElementById('btnSaveGPX').style.display = 'none';
   // Reset cue point triggered flags so they fire again on next live run
   cuePts.forEach(c => { c.triggered = false; });
@@ -1943,6 +2046,7 @@ function stopLiveRun() {
   clearInterval(liveMapTimer);
   liveMapTimer = null;
   gpsHistory = [];
+  liveStartTime = null;
   document.getElementById('btnStartRun').style.display = 'inline-block';
   document.getElementById('btnStopRun').style.display  = 'none';
   document.getElementById('liveStatsPanel').style.display = 'none';
@@ -1958,7 +2062,7 @@ function onGPSUpdate(pos) {
   const now = pos.timestamp || Date.now();
 
   // Traccia completa (per export GPX)
-  gpsTrack.push({ lat, lon, alt: pos.coords.altitude, time: now });
+  gpsTrack.push({ lat, lon, alt: pos.coords.altitude, time: now, hr: _currentHR });
   // Mantieni finestra scorrevole di 45 secondi (per il calcolo del passo)
   gpsHistory.push({ lat, lon, time: now });
   const cutoff = now - 45000;
@@ -1976,6 +2080,15 @@ function onGPSUpdate(pos) {
   document.getElementById('lvProgress').textContent    = Math.round(pct) + '%';
   document.getElementById('lvAccuracy').textContent    = '±' + Math.round(accuracy) + ' m';
   document.getElementById('progressRouteFill').style.width = pct + '%';
+  // Tempo trascorso
+  if (liveStartTime) {
+    const sec = Math.floor((Date.now() - liveStartTime) / 1000);
+    const hh = Math.floor(sec / 3600), mm = Math.floor((sec % 3600) / 60), ss = sec % 60;
+    document.getElementById('lvElapsed').textContent =
+      hh > 0 ? `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}` : `${mm}:${String(ss).padStart(2,'0')}`;
+  }
+  // Cardio BLE
+  document.getElementById('lvHR').textContent = _currentHR ? _currentHR + ' ♥' : '—';
 
   // Passo attuale → Auto-DJ + cue point check
   const paceSecPerKm = getCurrentPace() ? getCurrentPace() * 60 : null;
@@ -2071,6 +2184,7 @@ function _onHRValue(e) {
   const flags = dv.getUint8(0);
   const hr    = (flags & 0x01) ? dv.getUint16(1, true) : dv.getUint8(1);
   document.getElementById('hrBPM').textContent = hr;
+  _currentHR = hr;
   // Zona (max HR approssimativo 190 bpm)
   const pct = hr / 190 * 100;
   let zone, color;
@@ -2088,18 +2202,23 @@ function saveGPXTrack() {
   if (!gpsTrack.length) return;
   const now  = new Date();
   const name = 'Attivita_' + now.toISOString().slice(0, 10);
+  const hasHR  = gpsTrack.some(p => p.hr != null);
   const trkpts = gpsTrack.map(p => {
-    const t   = new Date(p.time).toISOString();
-    const ele = (p.alt != null && !isNaN(p.alt))
+    const t      = new Date(p.time).toISOString();
+    const ele    = (p.alt != null && !isNaN(p.alt))
       ? `\n        <ele>${p.alt.toFixed(1)}</ele>` : '';
-    return `      <trkpt lat="${p.lat.toFixed(7)}" lon="${p.lon.toFixed(7)}">${ele}\n        <time>${t}</time>\n      </trkpt>`;
+    const hrExt  = (hasHR && p.hr != null)
+      ? `\n        <extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>${p.hr}</gpxtpx:hr></gpxtpx:TrackPointExtension></extensions>` : '';
+    return `      <trkpt lat="${p.lat.toFixed(7)}" lon="${p.lon.toFixed(7)}">${ele}\n        <time>${t}</time>${hrExt}\n      </trkpt>`;
   }).join('\n');
+  const hrNs   = hasHR ? '\n  xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"' : '';
+  const hrSchema = hasHR ? '\n    http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd' : '';
   const gpx =
 `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="Strava Music Pacer"
-  xmlns="http://www.topografix.com/GPX/1/1"
+  xmlns="http://www.topografix.com/GPX/1/1"${hrNs}
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd${hrSchema}">
   <metadata><name>${name}</name><time>${now.toISOString()}</time></metadata>
   <trk>
     <name>${name}</name>
@@ -2256,6 +2375,8 @@ function handleFile(file) {
   const ap = document.getElementById('audioPlayer'); if (ap) ap.pause();
   document.getElementById('loader').style.display = 'block';
   document.getElementById('results').style.display = 'none';
+  document.getElementById('uploadWrap').style.display = '';
+  document.getElementById('uploadNav').style.display  = 'flex';
   document.querySelector('.chart-section').style.display = '';
   document.getElementById('mapSection').style.display = '';
 
@@ -2277,6 +2398,45 @@ function showError(msg) {
   const box = document.getElementById('errorBox');
   box.textContent = msg;
   box.style.display = msg ? 'block' : 'none';
+}
+
+// ─── TAB NAVIGATION ──────────────────────────────────────────────────────────
+function toggleSegPanel() {
+  const wrap = document.getElementById('segRowsWrap');
+  const btn  = document.getElementById('btnSegToggle');
+  if (!wrap) return;
+  const show = wrap.style.display === 'none';
+  wrap.style.display = show ? 'block' : 'none';
+  btn.textContent    = show ? '▲ Nascondi' : '▼ Dettaglio';
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#mainNav .tab-nav').forEach(b => b.classList.remove('active'));
+  const cap = name.charAt(0).toUpperCase() + name.slice(1);
+  const panel = document.getElementById('panel' + cap);
+  const btn   = document.getElementById('tn'    + cap);
+  if (panel) panel.classList.add('active');
+  if (btn)   btn.classList.add('active');
+  // Redraw map when switching to percorso (container size may have changed)
+  if (name === 'percorso' && routeCoords && routeCoords.length > 1) {
+    setTimeout(() => drawMap(routeCoords, routeColor, null, routeSegments), 60);
+  }
+}
+
+function backToUpload() {
+  try { stopLiveRun(); } catch(e) {}
+  document.getElementById('results').style.display    = 'none';
+  document.getElementById('uploadWrap').style.display = 'block';
+  document.getElementById('uploadNav').style.display  = 'flex';
+  document.getElementById('btnBackToApp').style.display = 'block'; // show back button
+  document.getElementById('fileInput').value = ''; // reset so same file re-triggers change
+}
+
+function returnToApp() {
+  document.getElementById('uploadWrap').style.display = 'none';
+  document.getElementById('uploadNav').style.display  = 'none';
+  document.getElementById('results').style.display    = 'flex';
 }
 
 // ─── EVENTS ──────────────────────────────────────────────────────────────────
