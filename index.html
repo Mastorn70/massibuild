@@ -76,7 +76,7 @@
     .btn-upload:hover { background: #e63900; transform: scale(1.03); }
 
     /* STATS CARDS */
-    #results { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+    #results { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
 
     /* ─── TAB NAVIGATION ─── */
     #mainNav, #uploadNav {
@@ -86,6 +86,7 @@
       padding: 0 12px; height: 48px;
     }
     #uploadNav { display: none; } /* hidden until upload screen is active */
+    #uploadWrap  { display: none; } /* hidden until user opens GPX loader */
     #mainNav .tab-nav, #uploadNav .tab-nav {
       padding: 0 16px; height: 100%; background: none; border: none;
       border-bottom: 3px solid transparent; color: #888; cursor: pointer;
@@ -689,18 +690,18 @@
 
     <!-- Tab navigation -->
     <nav id="mainNav">
-      <button class="tab-nav active" id="tnPercorso" onclick="switchTab('percorso')">🗺 Percorso</button>
+      <button class="tab-nav" id="tnPercorso" onclick="switchTab('percorso')">🗺 Percorso</button>
+      <button class="tab-nav active" id="tnCorsa"    onclick="switchTab('corsa')">🏃 Corsa</button>
       <button class="tab-nav" id="tnMusica"   onclick="switchTab('musica')">🎵 Musica</button>
-      <button class="tab-nav" id="tnCorsa"    onclick="switchTab('corsa')">🏃 Corsa</button>
       <div class="nav-spacer"></div>
-      <button class="btn-change-gpx" onclick="backToUpload()">📂 Cambia GPX</button>
+      <button class="btn-change-gpx" id="btnChangeGpx" onclick="backToUpload()">📂 Carica GPX</button>
     </nav>
 
     <!-- Tab panels -->
     <div class="tab-panels">
 
       <!-- ── PERCORSO ── -->
-      <div class="tab-panel active" id="panelPercorso">
+      <div class="tab-panel" id="panelPercorso">
         <div class="percorso-wrap">
 
           <!-- LEFT: map + cue points -->
@@ -1423,7 +1424,8 @@ function showResults(data) {
   document.getElementById('uploadWrap').style.display = 'none';
   document.getElementById('uploadNav').style.display  = 'none';
   document.getElementById('results').style.display = 'flex';
-  switchTab('percorso');
+  document.getElementById('btnChangeGpx').textContent = '\ud83d\udcc2 Cambia GPX';
+  switchTab('corsa');
   updateTicker();
 }
 
@@ -2375,7 +2377,7 @@ function handleFile(file) {
   const ap = document.getElementById('audioPlayer'); if (ap) ap.pause();
   document.getElementById('loader').style.display = 'block';
   document.getElementById('results').style.display = 'none';
-  document.getElementById('uploadWrap').style.display = '';
+  document.getElementById('uploadWrap').style.display = 'block';
   document.getElementById('uploadNav').style.display  = 'flex';
   document.querySelector('.chart-section').style.display = '';
   document.getElementById('mapSection').style.display = '';
