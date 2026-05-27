@@ -2,8 +2,17 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Strava Music Pacer</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#fc4c02" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SMP" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
   <style>
     :root {
       --orange: #fc4c02;
@@ -24,6 +33,7 @@
       background: var(--dark);
       color: var(--text);
       height: 100vh;
+      height: 100dvh; /* Android Chrome: esclude address bar dinamica */
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -124,37 +134,71 @@
       .ccol-left .map-section { position: sticky; top: 0; z-index: 10; }
     }
     @media (max-width: 899px) {
-      /* Flatten the two columns — children become direct flex items of percorso-wrap */
-      .percorso-wrap  { display: flex; flex-direction: column; padding: 16px 16px 60px; }
-      .pcol-left, .pcol-right { display: contents; }
-      /* Visual order: map (sticky) → cue panel → stats → difficulty → chart → segments */
-      #mapSection    { order: 1; position: sticky; top: 0; z-index: 10; }
-      #cuePtsPanel   { order: 2; }
-      #statsGrid     { order: 3; }
-      #diffSection   { order: 4; }
-      .chart-section { order: 5; }
-      #segmentPanel  { order: 6; }
+      /* ── Percorso: mappa full-screen, stats overlay in basso ── */
+      #panelPercorso { overflow: hidden; padding: 0 !important; }
+      .percorso-wrap { position: absolute; inset: 0; display: block; padding: 0; }
+      .pcol-left  { display: block; position: absolute; inset: 0; overflow: visible; }
+      .pcol-right { display: block; position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+                    padding: 12px 16px 60px;
+                    background: transparent;
+                    border-top: 1px solid rgba(255,255,255,0.10);
+                    pointer-events: none; }
+      /* Mappa riempie tutto il pannello sinistro */
+      #mapSection { position: absolute !important; inset: 0; margin: 0; padding: 0 !important;
+                    border-radius: 0; border: none; background: #0d1117; }
+      /* Barra h3 + bottone Cue: si posiziona in alto a SINISTRA come overlay */
+      #mapSection > div:first-child { position: absolute; top: 8px; left: 8px; right: auto; z-index: 30;
+                                      margin-bottom: 0 !important; }
+      #mapSection h3 { display: none; }
+      /* Legenda sposta in basso al centro */
+      #mapSection .map-legend { position: absolute; bottom: 12px; left: 50%;
+                                transform: translateX(-50%); margin-top: 0;
+                                background: rgba(0,0,0,0.55); border-radius: 8px;
+                                padding: 4px 12px; white-space: nowrap; z-index: 5; }
+      /* Zoom ctrl: non serve più liberare spazio dalla h3 */
+      #mapZoomCtrl { top: 12px !important; z-index: 30 !important; }
+      /* Canvas riempie tutto */
+      #routeMap { position: absolute !important; top: 0 !important; left: 0 !important;
+                  width: 100% !important; max-height: none !important; border-radius: 0 !important; }
+      /* Pannello cue points: overlay sopra stats */
+      /* drawControls: sopra tutti gli overlay */
+      #drawControls { z-index: 30 !important; position: relative; }
+      /* Pannello cue points: overlay sopra stats */
+      #cuePtsPanel { position: absolute; bottom: 48px; left: 0; right: 0; z-index: 30;
+                     max-height: 50vh; overflow-y: auto;
+                     background: rgba(13,17,23,0.92); padding: 12px 16px;
+                     border-top: 1px solid rgba(255,255,255,0.10); }
       /* Corsa layout mobile — mappa full-screen con pannello metriche sovrapposto in basso */
       #panelCorsa { overflow: hidden; padding: 0 !important; }
       /* corsa-wrap: absolute inset:0 — evita height:100% che non sempre risolve */
       .corsa-wrap { position: absolute; inset: 0; padding: 0; }
       /* mappa occupa TUTTO il pannello */
-      .ccol-left  { position: absolute; inset: 0; overflow: hidden; padding: 0; }
-      /* metriche flottano in basso come overlay semi-trasparente */
+      .ccol-left  { position: absolute; inset: 0; overflow: visible; padding: 0; }
+      /* metriche flottano in basso come overlay trasparente */
       .ccol-right {
         position: absolute; bottom: 0; left: 0; right: 0;
-        max-height: 45vh; overflow-y: auto;
         padding: 12px 16px 60px;
-        background: rgba(13,17,23,0.88);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: transparent;
         border-top: 1px solid rgba(255,255,255,0.10);
         z-index: 20;
       }
       /* mappa si estende a tutto schermo nel suo contenitore */
+      /* --live-map-h è calcolato in JS da window.innerHeight - header - nav */
       #liveMapSection { position: absolute; inset: 0; margin: 0; padding: 0 !important; border-radius: 0; border: none; background: #0d1117; }
       #liveMapSection > h3 { display: none; }
-      #liveRouteMap { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border-radius: 0 !important; }
+      #liveRouteMap { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; border-radius: 0 !important; }
+
+      /* ── Card trasparenti negli overlay su mappa ── */
+      #segmentPanel   { display: none !important; }
+      .live-section   { background: transparent !important; border: none !important; box-shadow: none !important; }
+      .stat-card,      .difficulty-section,
+      .chart-section { background: transparent !important; border: none !important; box-shadow: none !important; }
+      .live-card      { background: transparent !important; border: none !important; }
+      /* Text-shadow per leggibilità sul fondo mappa */
+      .stat-card .value, .lv  { text-shadow: 0 1px 5px rgba(0,0,0,0.95); }
+      .stat-card .label, .ll  { text-shadow: 0 1px 4px rgba(0,0,0,0.9); color: #ccc !important; }
+      .diff-info h3, .diff-desc, .diff-badge { text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
+      .chart-section h3 { text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
     }
 
     .stats-grid {
@@ -235,7 +279,8 @@
     .map-section h3 { font-size: 0.95rem; color: #888; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
     #routeMap { border-radius: 10px; overflow: hidden; display: block; width: 100%; cursor: grab; }
     #routeMap:active { cursor: grabbing; }
-    #liveRouteMap { border-radius: 10px; display: block; width: 100%; }
+    #liveRouteMap { border-radius: 10px; display: block; width: 100%; max-height: none !important; cursor: grab; }
+    #liveRouteMap:active { cursor: grabbing; }
     #mapZoomCtrl {
       position: absolute; top: 52px; right: 12px;
       display: flex; flex-direction: column; gap: 4px; z-index: 10;
@@ -696,6 +741,10 @@
       <p>Esporta la tua attività da Strava → Opzioni → Esporta GPX</p>
       <button class="btn-upload" onclick="document.getElementById('fileInput').click()">Scegli file GPX</button>
       <input type="file" id="fileInput" accept=".gpx,.xml" />
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:14px;flex-wrap:wrap">
+        <button onclick="startFreeRun()" style="padding:9px 20px;background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.4);color:#2ecc71;border-radius:24px;font-weight:600;cursor:pointer;font-size:.86rem">🏃 Corsa libera</button>
+        <button onclick="startRouteDrawing()" style="padding:9px 20px;background:rgba(252,76,2,0.12);border:1px solid rgba(252,76,2,0.4);color:#fc4c02;border-radius:24px;font-weight:600;cursor:pointer;font-size:.86rem">✏️ Disegna percorso</button>
+      </div>
     </div>
 
     <div class="error-box" id="errorBox"></div>
@@ -741,6 +790,12 @@
                 <button onclick="resetMapZoom()" title="Vista completa">↺</button>
               </div>
               <div id="mapZoomLabel">100%</div>
+              <div id="drawControls" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1)">
+                <span id="drawPointCount" style="font-size:.8rem;color:#aaa">0 punti</span>
+                <button onclick="undoLastPoint()" style="padding:5px 12px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:#ccc;border-radius:16px;cursor:pointer;font-size:.8rem">↩ Annulla</button>
+                <button onclick="clearDraftRoute()" style="padding:5px 12px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);color:#e74c3c;border-radius:16px;cursor:pointer;font-size:.8rem">🗑 Cancella</button>
+                <button onclick="finalizeRoute()" style="padding:5px 14px;background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.4);color:#2ecc71;border-radius:16px;font-weight:600;cursor:pointer;font-size:.8rem">✅ Usa percorso</button>
+              </div>
             </div>
 
             <!-- CUE POINTS -->
@@ -1019,6 +1074,7 @@ const _tileCache = new Map(); // 'z/x/y' → { img, loaded }
 // Tile provider: CARTO Dark Matter (flat, minimal, dark style)
 const _TILE_URL = (z, x, y) => `https://basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`;
 let _lastDrawMapArgs = null;
+let _lastLiveMapArgs = null;
 function _lonToTile(lon, z) { return Math.floor((lon + 180) / 360 * (1 << z)); }
 function _latToTile(lat, z) {
   const r = lat * Math.PI / 180;
@@ -1052,7 +1108,11 @@ function _drawTiles(ctx, projectFn, minLon, maxLon, minLat, maxLat) {
       } else if (!_tileCache.has(key)) {
         const e = { img: new Image(), loaded: false };
         _tileCache.set(key, e);
-        e.img.onload = () => { e.loaded = true; if (_lastDrawMapArgs) drawMap(..._lastDrawMapArgs); };
+        e.img.onload = () => {
+          e.loaded = true;
+          if (_lastDrawMapArgs) drawMap(..._lastDrawMapArgs);
+          if (_lastLiveMapArgs) drawMap(..._lastLiveMapArgs);
+        };
         e.img.onerror = () => { _tileCache.delete(key); };
         e.img.src = _TILE_URL(z, tx, ty);
       }
@@ -1061,10 +1121,11 @@ function _drawTiles(ctx, projectFn, minLon, maxLon, minLat, maxLat) {
 }
 
 // ─── MAP (canvas self-contained, no external deps) ───────────────────────────
-function drawMap(coords, routeColor, livePos, segments, _sec, _cvs) {
+function drawMap(coords, routeColor, livePos, segments, _sec, _cvs, _fw, _fh) {
   const sectionId = _sec || 'mapSection';
   const canvasId  = _cvs || 'routeMap';
   if (!_sec) _lastDrawMapArgs = [coords, routeColor, livePos, segments];
+  if (_sec)  _lastLiveMapArgs  = [coords, routeColor, livePos, segments, _sec, _cvs];
   const section = document.getElementById(sectionId);
   if (!section) return;
   // Sostituisci il canvas ad ogni caricamento
@@ -1076,15 +1137,17 @@ function drawMap(coords, routeColor, livePos, segments, _sec, _cvs) {
 
   // Compute usable size
   let W, H;
-  if (_sec) {
-    // Live map on mobile: misura direttamente dai bordi del viewport
-    // (evita tutti i problemi di cascade height nella catena position:absolute)
+  if (_sec || window.innerWidth < 900) {
+    // Full-screen map (live o percorso su mobile): calcolo da window
     const _hdr = document.querySelector('header');
     const _nav = document.getElementById('mainNav');
-    const _hdrH = _hdr ? _hdr.offsetHeight : 0;
-    const _navH = _nav ? _nav.offsetHeight : 0;
+    const hdrB = _hdr ? _hdr.getBoundingClientRect().bottom : 0;
+    const navH = _nav ? _nav.offsetHeight : 0;
     W = window.innerWidth;
-    H = Math.max(300, window.innerHeight - _hdrH - _navH);
+    H = Math.max(200, window.innerHeight - hdrB - navH);
+    // Forza altezza sulla section per garantire che il canvas non venga clippato
+    section.style.height = H + 'px';
+    section.style.width  = W + 'px';
   } else {
     const _cs   = window.getComputedStyle(section);
     const _padX = (parseFloat(_cs.paddingLeft)||0) + (parseFloat(_cs.paddingRight)||0);
@@ -1092,50 +1155,67 @@ function drawMap(coords, routeColor, livePos, segments, _sec, _cvs) {
     H = Math.round(W * 0.65);
   }
 
-  // HiDPI / Retina — draw at device pixel density for sharp rendering
+  // HiDPI / Retina
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   canvas.width  = Math.round(W * dpr);
   canvas.height = Math.round(H * dpr);
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
+  // Per la mappa live o percorso su mobile forza l'altezza con !important per battere regole CSS.
+  if (!_sec && window.innerWidth >= 900) {
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+  } else {
+    canvas.style.setProperty('width',  W + 'px', 'important');
+    canvas.style.setProperty('height', H + 'px', 'important');
+  }
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
+
+
 
   // Bounds geografici
   const lats = coords.map(c => c[0]);
   const lons = coords.map(c => c[1]);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-  const minLon = Math.min(...lons), maxLon = Math.max(...lons);
+  let minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  let minLon = Math.min(...lons), maxLon = Math.max(...lons);
+  // Per la mappa live garantisci una visuale minima di ~800m centrata sulla posizione attuale
+  if (_sec === 'liveMapSection') {
+    const MIN_SPAN = 0.008;
+    const cLat = livePos ? livePos.lat : (minLat + maxLat) / 2;
+    const cLon = livePos ? livePos.lon : (minLon + maxLon) / 2;
+    if (maxLat - minLat < MIN_SPAN) { minLat = cLat - MIN_SPAN / 2; maxLat = cLat + MIN_SPAN / 2; }
+    if (maxLon - minLon < MIN_SPAN) { minLon = cLon - MIN_SPAN / 2; maxLon = cLon + MIN_SPAN / 2; }
+  }
   const spanLat = maxLat - minLat || 0.001;
   const spanLon = maxLon - minLon || 0.001;
+  const cosLat  = Math.cos((minLat + maxLat) / 2 * Math.PI / 180);
+  const geoAR   = (spanLon * cosLat) / spanLat;
+  const canAR   = W / H;
 
-  // Correzione aspect ratio per proiezione equirettangolare
-  const cosLat = Math.cos((minLat + maxLat) / 2 * Math.PI / 180);
-  const geoAR  = (spanLon * cosLat) / spanLat;  // rapporto lon/lat corretto
-  const canAR  = W / H;
-
-  const pad = _sec ? 16 : 28; // mappa live: bordi più sottili per massimizzare la visibilità
-  let drawW = W - pad * 2;
-  let drawH = H - pad * 2;
-  // Mappa principale: mantieni proporzioni geografiche reali (evita distorsioni sul percorso)
-  // Mappa live: riempi il canvas a tutto schermo (leggibilità > precisione geo su mobile)
-  if (!_sec) {
-    if (geoAR > canAR) {
-      drawH = drawW / geoAR;
-    } else {
-      drawW = drawH * geoAR;
-    }
-  }
+  // Proiezione: percorso geo-corretto, centrato nel canvas
+  const pad  = _sec ? 10 : 28;
+  let drawW  = W - pad * 2;
+  let drawH  = H - pad * 2;
+  if (geoAR > canAR) { drawH = drawW / geoAR; }
+  else               { drawW = drawH * geoAR; }
   const offX = (W - drawW) / 2;
   const offY = (H - drawH) / 2;
-  // Store projection for map-click → lat/lon inverse mapping (primary canvas only)
+
   if (!_sec) mapProjection = { offX, offY, drawW, drawH, minLat, maxLat, minLon, spanLon, spanLat };
 
   function project([lat, lon]) {
-    const x = offX + ((lon - minLon) / spanLon) * drawW;
-    const y = offY + ((maxLat - lat) / spanLat) * drawH; // lat invertita
-    return [x, y];
+    return [
+      offX + ((lon - minLon) / spanLon) * drawW,
+      offY + ((maxLat - lat) / spanLat) * drawH
+    ];
   }
+
+  // Bounds lat/lon dell'intero canvas (proiezione inversa degli angoli) → tiles coprono tutto lo schermo
+  const _invLon = px => minLon + ((px - offX) / drawW) * spanLon;
+  const _invLat = py => maxLat - ((py - offY) / drawH) * spanLat;
+  const tileBounds = {
+    minLon: _invLon(0), maxLon: _invLon(W),
+    minLat: _invLat(H), maxLat: _invLat(0)
+  };
 
   // ── Sfondo ──
   ctx.fillStyle = '#0d1117';
@@ -1143,10 +1223,10 @@ function drawMap(coords, routeColor, livePos, segments, _sec, _cvs) {
   ctx.roundRect(0, 0, W, H, 10);
   ctx.fill();
 
-  // Apply zoom/pan transform — live canvas always at 1:1, primary canvas respects user zoom
-  const _zm = _sec ? 1 : mapZoom;
-  const _tx = _sec ? 0 : mapPan.x;
-  const _ty = _sec ? 0 : mapPan.y;
+  // Apply zoom/pan transform — live canvas uses livePan, primary canvas uses mapZoom/mapPan
+  const _zm = _sec === 'liveMapSection' ? liveZoom : (_sec ? 1 : mapZoom);
+  const _tx = _sec === 'liveMapSection' ? livePan.x : (_sec ? 0 : mapPan.x);
+  const _ty = _sec === 'liveMapSection' ? livePan.y : (_sec ? 0 : mapPan.y);
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, W, H);
@@ -1155,7 +1235,7 @@ function drawMap(coords, routeColor, livePos, segments, _sec, _cvs) {
   ctx.setTransform(_zm * dpr, 0, 0, _zm * dpr, _tx * dpr, _ty * dpr);
 
   // ── Mappa CARTO Dark (stile piatto, minimalista) ──
-  _drawTiles(ctx, project, minLon, maxLon, minLat, maxLat);
+  _drawTiles(ctx, project, tileBounds.minLon, tileBounds.maxLon, tileBounds.minLat, tileBounds.maxLat);
 
   // ── Ombra tracciato ──
   ctx.save();
@@ -1542,8 +1622,26 @@ let analysisAborted = false;
 let musicViewTab = 'compat'; // 'compat' | 'all'
 
 document.addEventListener('DOMContentLoaded', () => {
-  // ResizeObserver sulla mappa live: ridisegna automaticamente quando il container cambia dimensioni
-  // (cambio tab, orientamento schermo, apertura tastiera, ecc.)
+  // Calcola e imposta la CSS variable --live-map-h: altezza esplicita per #liveMapSection
+  // in modo che getBoundingClientRect() restituisca sempre il valore corretto.
+  function _setLiveMapHeight() {
+    const _h = document.querySelector('header');
+    const _n = document.getElementById('mainNav');
+    const topH = (_h ? _h.offsetHeight : 0) + (_n ? _n.offsetHeight : 0);
+    const liveH = Math.max(200, window.innerHeight - topH);
+    document.documentElement.style.setProperty('--live-map-h', liveH + 'px');
+  }
+  _setLiveMapHeight();
+  window.addEventListener('resize', () => {
+    _setLiveMapHeight();
+    if (routeCoords && routeCoords.length > 1) {
+      requestAnimationFrame(() =>
+        drawMap(routeCoords, routeColor, null, routeSegments, 'liveMapSection', 'liveRouteMap')
+      );
+    }
+  });
+
+  // ResizeObserver: ridisegna quando il container cambia (cambio tab, orientamento, ecc.)
   const _lms = document.getElementById('liveMapSection');
   if (_lms && window.ResizeObserver) {
     new ResizeObserver(() => {
@@ -1874,9 +1972,14 @@ let lastAutoBPM      = null;
 let cuePts           = []; // { id, cumDist, songIdx, triggered }
 let cueIdSeq         = 0;
 let mapEditMode      = false;
+let freeRunMode      = false;   // corsa senza traccia GPX precaricata
+let mapDrawMode      = false;   // modalità disegno percorso a mano
+let drawDraftCoords  = [];      // punti tracciati nella modalità disegno
 let mapProjection    = null; // { offX,offY,drawW,drawH,minLat,maxLat,minLon,spanLon,spanLat }
 let mapZoom          = 1;
 let mapPan           = { x: 0, y: 0 };
+let livePan          = { x: 0, y: 0 };  // pan per la mappa live
+let liveZoom         = 1;               // zoom per la mappa live
 let _mapDrag         = null;  // { startX, startY, startPanX, startPanY }
 let _mapDragMoved    = false;
 
@@ -2107,6 +2210,16 @@ function stopLiveRun() {
   document.getElementById('btnStopRun').style.display  = 'none';
   document.getElementById('liveStatsPanel').style.display = 'none';
   document.getElementById('liveGpsStatus').style.display  = 'none';
+  // Ferma la musica
+  const _ap = document.getElementById('audioPlayer');
+  if (_ap && !_ap.paused) {
+    _ap.pause();
+    const _mpb = document.getElementById('miniPlayBtn');
+    if (_mpb) _mpb.textContent = '▶';
+  }
+  livePan  = { x: 0, y: 0 };  // reset pan mappa corsa
+  liveZoom = 1;                // reset zoom mappa corsa
+  freeRunMode = false;         // reset modalità libera
   // Mostra il pulsante salva GPX se la traccia ha abbastanza punti
   if (gpsTrack.length >= 5) document.getElementById('btnSaveGPX').style.display = 'inline-block';
   // Ridisegna la mappa senza il dot
@@ -2125,6 +2238,33 @@ function onGPSUpdate(pos) {
   while (gpsHistory.length > 1 && gpsHistory[0].time < cutoff) gpsHistory.shift();
 
   setLiveStatus('active', `📍 GPS attivo · precisione ±${Math.round(accuracy)} m`);
+
+  // ── CORSA LIBERA (nessuna traccia GPX) ───────────────────────────────────
+  if (freeRunMode) {
+    let freeDist = 0;
+    for (let i = 1; i < gpsTrack.length; i++)
+      freeDist += haversine(gpsTrack[i-1].lat, gpsTrack[i-1].lon, gpsTrack[i].lat, gpsTrack[i].lon);
+    document.getElementById('lvDistCovered').textContent = fmtDist(freeDist);
+    document.getElementById('lvDistRemain').textContent  = '—';
+    document.getElementById('lvProgress').textContent    = '—';
+    document.getElementById('lvAccuracy').textContent    = '±' + Math.round(accuracy) + ' m';
+    if (liveStartTime) {
+      const sec = Math.floor((Date.now() - liveStartTime) / 1000);
+      const hh = Math.floor(sec/3600), mm = Math.floor((sec%3600)/60), ss = sec%60;
+      document.getElementById('lvElapsed').textContent =
+        hh > 0 ? `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}` : `${mm}:${String(ss).padStart(2,'0')}`;
+    }
+    document.getElementById('lvHR').textContent = _currentHR ? _currentHR + ' ♥' : '—';
+    const freePace = getCurrentPace() ? getCurrentPace() * 60 : null;
+    document.getElementById('lvPaceCurrent').textContent = fmtPace(freePace);
+    autoSelectSong(freePace);
+    const trail = gpsTrack.map(p => [p.lat, p.lon]);
+    if (trail.length < 2) trail.push([lat + 0.00001, lon]);
+    drawMap(trail, '#2ecc71', { lat, lon, accuracy }, [], 'liveMapSection', 'liveRouteMap');
+    updateTicker();
+    return;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Posizione sul percorso
   const { distFromRoute, cumDist } = nearestOnRoute(lat, lon);
@@ -2349,8 +2489,82 @@ function toggleMapEditMode() {
   }
 }
 
+// ─── CORSA LIBERA / DISEGNO PERCORSO ─────────────────────────────────────────
+function startFreeRun() {
+  freeRunMode    = true;
+  routeCoords    = [];
+  routeTotalDist = 0;
+  document.getElementById('uploadWrap').style.display  = 'none';
+  document.getElementById('uploadNav').style.display   = 'none';
+  document.getElementById('results').style.display     = 'flex';
+  document.getElementById('btnChangeGpx').textContent  = '📂 Carica GPX';
+  document.getElementById('mapSection').style.display  = 'none';
+  document.getElementById('cuePtsPanel').style.display = 'none';
+  document.getElementById('lvPaceTarget').textContent  = '—';
+  document.getElementById('liveStatsPanel').style.display = 'block';
+  switchTab('corsa');
+}
+
+function startRouteDrawing() {
+  mapDrawMode     = true;
+  drawDraftCoords = [];
+  document.getElementById('uploadWrap').style.display  = 'none';
+  document.getElementById('uploadNav').style.display   = 'none';
+  document.getElementById('results').style.display     = 'flex';
+  document.getElementById('btnChangeGpx').textContent  = '📂 Carica GPX';
+  document.getElementById('mapSection').style.display  = '';
+  switchTab('percorso');
+  document.getElementById('drawControls').style.display  = 'flex';
+  const hint = document.getElementById('editModeHint');
+  if (hint) { hint.textContent = '✏️ Tocca/clicca sulla mappa per aggiungere punti del percorso'; hint.style.display = 'block'; }
+  // Centra su GPS o default (Roma)
+  navigator.geolocation.getCurrentPosition(
+    pos  => { drawDraftCoords = [[pos.coords.latitude, pos.coords.longitude]]; drawDraftMap(); },
+    ()   => { drawDraftCoords = [[41.9028, 12.4964]]; drawDraftMap(); },
+    { timeout: 5000, enableHighAccuracy: false }
+  );
+}
+
+function drawDraftMap() {
+  const coords = drawDraftCoords.length >= 1 ? drawDraftCoords : [[41.9028, 12.4964]];
+  drawMap(coords, '#fc4c02', null, []);
+  updateDrawPointCount();
+}
+
+function updateDrawPointCount() {
+  const el = document.getElementById('drawPointCount');
+  if (el) {
+    const n = Math.max(0, drawDraftCoords.length - 1);
+    el.textContent = n + (n === 1 ? ' punto' : ' punti');
+  }
+}
+
+function undoLastPoint() {
+  if (drawDraftCoords.length > 1) { drawDraftCoords.pop(); drawDraftMap(); }
+}
+
+function clearDraftRoute() {
+  if (drawDraftCoords.length > 0) drawDraftCoords = [drawDraftCoords[0]];
+  drawDraftMap();
+}
+
+function finalizeRoute() {
+  if (drawDraftCoords.length < 2) { alert('Aggiungi almeno 2 punti per creare un percorso.'); return; }
+  const coords = [...drawDraftCoords];
+  mapDrawMode = false;
+  document.getElementById('drawControls').style.display = 'none';
+  const hint = document.getElementById('editModeHint');
+  if (hint) hint.style.display = 'none';
+  let totalDist = 0;
+  for (let i = 1; i < coords.length; i++)
+    totalDist += haversine(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]);
+  showResults({ coords, dist: totalDist, elevGain: 0, elevLoss: 0,
+                elevations: [], durationMin: null, movingTimeMin: null,
+                avgPaceSecPerKm: null, coordEles: [] });
+}
+
 function onMapClick(e) {
-  if (!mapEditMode || !mapProjection || !routeCoords.length) return;
+  if (!mapProjection) return;
   const canvas = document.getElementById('routeMap');
   if (!canvas) return;
   const rect   = canvas.getBoundingClientRect();
@@ -2358,12 +2572,17 @@ function onMapClick(e) {
   const scaleY = canvas.height / rect.height;
   const cx = (e.clientX - rect.left) * scaleX;
   const cy = (e.clientY - rect.top)  * scaleY;
-  // Inverse-apply zoom/pan to get logical (unzoomed) canvas coordinate
   const lx = (cx - mapPan.x) / mapZoom;
   const ly = (cy - mapPan.y) / mapZoom;
   const { offX, offY, drawW, drawH, minLat, maxLat, minLon, spanLon, spanLat } = mapProjection;
   const lon = minLon + ((lx - offX) / drawW) * spanLon;
   const lat = maxLat - ((ly - offY) / drawH) * spanLat;
+  if (mapDrawMode) {
+    drawDraftCoords.push([lat, lon]);
+    drawDraftMap();
+    return;
+  }
+  if (!mapEditMode || !routeCoords.length) return;
   const { cumDist } = nearestOnRoute(lat, lon);
   addCuePoint(cumDist);
 }
@@ -2480,12 +2699,21 @@ function switchTab(name) {
   }
   // Ridisegna la mappa live quando si passa alla tab Corsa
   if (name === 'corsa' && routeCoords && routeCoords.length > 1) {
-    setTimeout(() => drawMap(routeCoords, routeColor, null, routeSegments, 'liveMapSection', 'liveRouteMap'), 60);
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      drawMap(routeCoords, routeColor, null, routeSegments, 'liveMapSection', 'liveRouteMap')
+    ));
   }
 }
 
 function backToUpload() {
   try { stopLiveRun(); } catch(e) {}
+  freeRunMode = false;
+  mapDrawMode = false;
+  drawDraftCoords = [];
+  const dc = document.getElementById('drawControls');
+  if (dc) dc.style.display = 'none';
+  const hint = document.getElementById('editModeHint');
+  if (hint) hint.style.display = 'none';
   document.getElementById('results').style.display    = 'none';
   document.getElementById('uploadWrap').style.display = 'block';
   document.getElementById('uploadNav').style.display  = 'flex';
@@ -2649,6 +2877,63 @@ _mapSec.addEventListener('touchend', () => {
   _touchPinchDist = null;
   _touchPanStart  = null;
 }, { passive: true });
+
+// ── Live map: single-finger pan + two-finger pinch zoom ─────────────────────
+const _liveSec = document.getElementById('liveMapSection');
+let _livePanStart  = null;
+let _livePinchDist = null;
+_liveSec.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    _livePinchDist = Math.hypot(dx, dy);
+    _livePanStart  = null;
+  } else if (e.touches.length === 1) {
+    _livePanStart = { x: e.touches[0].clientX, y: e.touches[0].clientY,
+                      panX: livePan.x, panY: livePan.y };
+    _livePinchDist = null;
+  }
+}, { passive: true });
+_liveSec.addEventListener('touchmove', e => {
+  const _args = _lastLiveMapArgs;
+  if (!_args) return;
+  if (e.touches.length === 2 && _livePinchDist !== null) {
+    e.preventDefault();
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const newDist = Math.hypot(dx, dy);
+    const factor  = newDist / _livePinchDist;
+    _livePinchDist = newDist;
+    const canvas = document.getElementById('liveRouteMap');
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const scX  = canvas.width  / rect.width;
+      const scY  = canvas.height / rect.height;
+      const mx = ((e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left) * scX;
+      const my = ((e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top)  * scY;
+      const old = liveZoom;
+      liveZoom  = Math.max(0.3, Math.min(12, liveZoom * factor));
+      livePan.x = mx - (mx - livePan.x) * liveZoom / old;
+      livePan.y = my - (my - livePan.y) * liveZoom / old;
+      drawMap(_args[0], _args[1], _args[2], _args[3], 'liveMapSection', 'liveRouteMap');
+    }
+  } else if (e.touches.length === 1 && _livePanStart) {
+    livePan.x = _livePanStart.panX + (e.touches[0].clientX - _livePanStart.x);
+    livePan.y = _livePanStart.panY + (e.touches[0].clientY - _livePanStart.y);
+    drawMap(_args[0], _args[1], _args[2], _args[3], 'liveMapSection', 'liveRouteMap');
+  }
+}, { passive: false });
+_liveSec.addEventListener('touchend', () => {
+  _livePinchDist = null;
+  _livePanStart  = null;
+}, { passive: true });
+
+/* ── Service Worker (PWA offline) ── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
 </script>
 
 <!-- Auto-DJ floating notification -->
