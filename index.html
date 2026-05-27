@@ -2,17 +2,8 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Strava Music Pacer</title>
-
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#fc4c02" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="SMP" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
   <style>
     :root {
       --orange: #fc4c02;
@@ -33,7 +24,6 @@
       background: var(--dark);
       color: var(--text);
       height: 100vh;
-      height: 100dvh; /* Android Chrome: esclude address bar dinamica */
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -48,8 +38,27 @@
       box-shadow: 0 4px 20px rgba(252,76,2,0.4);
     }
     header svg { width: 36px; height: 36px; fill: white; flex-shrink: 0; }
+      header > div { flex: 1; min-width: 0; }
     header h1 { font-size: 1.6rem; font-weight: 700; color: white; }
     header p  { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+      #btnThemeMobile {
+        position: fixed;
+        top: 8px;
+        right: 12px;
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.35);
+        background: rgba(255,255,255,0.18);
+        color: #fff;
+        font-size: 1.2rem;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+      }
 
     /* APP SHELL */
     #appShell { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
@@ -199,6 +208,88 @@
       .stat-card .label, .ll  { text-shadow: 0 1px 4px rgba(0,0,0,0.9); color: #ccc !important; }
       .diff-info h3, .diff-desc, .diff-badge { text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
       .chart-section h3 { text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
+    }
+
+    /* ─── MODALITÀ GIORNO ──────────────────────────────────────────────────── */
+    html.day-mode {
+      --dark: #eef1f6;
+      --card: #ffffff;
+      --card2: #dde3ef;
+      --text: #1c1e2e;
+    }
+    html.day-mode body    { background: var(--dark); color: var(--text); }
+    html.day-mode #mainNav,
+    html.day-mode #uploadNav {
+      background: rgba(240,243,248,0.97);
+      border-bottom-color: rgba(0,0,0,0.08);
+    }
+    html.day-mode #mainNav .tab-nav,
+    html.day-mode #uploadNav .tab-nav { color: #555; }
+    html.day-mode #mainNav .tab-nav:hover,
+    html.day-mode #uploadNav .tab-nav:hover { color: #111; }
+    html.day-mode #mainNav .tab-nav.active,
+    html.day-mode #uploadNav .tab-nav.active { color: var(--orange); }
+    html.day-mode #mainNav .btn-change-gpx,
+    html.day-mode #uploadNav .btn-change-gpx {
+      background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.13); color: #555;
+    }
+    html.day-mode .stat-card         { border-color: rgba(0,0,0,0.08); }
+    html.day-mode .stat-card .label  { color: #666 !important; }
+    html.day-mode .difficulty-section { border-color: rgba(0,0,0,0.08); }
+    html.day-mode .diff-info h3      { color: #555; }
+    html.day-mode .diff-desc         { color: #444; }
+    html.day-mode .chart-section     { border-color: rgba(0,0,0,0.08); }
+    html.day-mode .chart-section h3  { color: #555; }
+    html.day-mode .map-section       { border-color: rgba(0,0,0,0.08); }
+    html.day-mode .map-section h3    { color: #555; }
+    html.day-mode .map-legend        { color: #444; }
+    html.day-mode .upload-zone       { background: rgba(252,76,2,0.04); }
+    html.day-mode .upload-zone p     { color: #555; }
+    html.day-mode .progress-bar-wrap { background: rgba(0,0,0,0.1); }
+    html.day-mode .live-section      { background: var(--card) !important; }
+    html.day-mode .live-card         { border-color: rgba(0,0,0,0.08) !important; }
+    html.day-mode .lv                { color: var(--orange); }
+    html.day-mode .ll                { color: #555 !important; }
+    html.day-mode #mapZoomCtrl button {
+      background: rgba(255,255,255,0.92); color: #333; border-color: rgba(0,0,0,0.2);
+    }
+    @media (max-width:899px) {
+      html.day-mode .stat-card .value,
+      html.day-mode .lv { text-shadow: none; color: var(--orange); }
+      html.day-mode .stat-card .label,
+      html.day-mode .ll { text-shadow: none; color: #555 !important; }
+      html.day-mode .diff-info h3, html.day-mode .diff-desc,
+      html.day-mode .diff-badge, html.day-mode .chart-section h3 { text-shadow: none; }
+      /* Overlay percorso: fondo semi-trasparente chiaro */
+      html.day-mode .pcol-right {
+        background: rgba(240,243,248,0.88) !important;
+        border-top-color: rgba(0,0,0,0.1) !important;
+      }
+      /* Overlay corsa: fondo semi-trasparente chiaro */
+      html.day-mode .ccol-right {
+        background: rgba(240,243,248,0.88) !important;
+        border-top-color: rgba(0,0,0,0.1) !important;
+      }
+      /* Card visibili su sfondo chiaro */
+      html.day-mode .stat-card,
+      html.day-mode .difficulty-section,
+      html.day-mode .chart-section {
+        background: rgba(255,255,255,0.7) !important;
+        border: 1px solid rgba(0,0,0,0.08) !important;
+      }
+      html.day-mode .live-section {
+        background: transparent !important;
+      }
+      html.day-mode .live-card {
+        background: rgba(255,255,255,0.55) !important;
+        border: 1px solid rgba(0,0,0,0.07) !important;
+      }
+      html.day-mode #cuePtsPanel {
+        background: rgba(240,243,248,0.96);
+        border-top-color: rgba(0,0,0,0.1);
+      }
+      html.day-mode #mapSection,
+      html.day-mode #liveMapSection { background: #c8d4e0 !important; }
     }
 
     .stats-grid {
@@ -645,12 +736,13 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── MOBILE LAYOUT ── */
-    @media (max-width: 768px) {
+    @media (max-width: 899px) {
       /* Slim header (in-flow, not fixed) */
-      header { padding: 10px 16px; gap: 10px; }
+      header { padding: 10px 60px 10px 16px; gap: 10px; }
       header svg { width: 26px; height: 26px; }
       header h1  { font-size: 1rem; }
       header p   { display: none; }
+      #btnTheme, #btnThemeUpload { display: none; }
 
       /* Upload zone */
       #uploadWrap { padding: 12px; }
@@ -722,6 +814,7 @@
     <h1>Strava Music Pacer</h1>
     <p>Analizza il tuo percorso e ottieni la playlist perfetta per migliorare il ritmo</p>
   </div>
+  <button id="btnThemeMobile" onclick="toggleTheme()" title="Cambia tema">☀️</button>
 </header>
 
 <div id="appShell">
@@ -730,6 +823,7 @@
   <nav id="uploadNav">
     <span style="font-size:.85rem;color:#666;padding:0 4px">&#128196; Carica GPX</span>
     <div class="nav-spacer"></div>
+    <button id="btnThemeUpload" onclick="toggleTheme()" class="btn-change-gpx" title="Cambia tema">☀️</button>
     <button id="btnBackToApp" class="btn-change-gpx" style="display:none" onclick="returnToApp()">← Torna all'app</button>
   </nav>
 
@@ -760,6 +854,7 @@
       <button class="tab-nav active" id="tnCorsa"    onclick="switchTab('corsa')">🏃 Corsa</button>
       <button class="tab-nav" id="tnMusica"   onclick="switchTab('musica')">🎵 Musica</button>
       <div class="nav-spacer"></div>
+      <button id="btnTheme" onclick="toggleTheme()" class="btn-change-gpx" title="Cambia tema">☀️</button>
       <button class="btn-change-gpx" id="btnChangeGpx" onclick="backToUpload()">📂 Carica GPX</button>
     </nav>
 
@@ -1071,8 +1166,11 @@ function haversine(lat1, lon1, lat2, lon2) {
 
 // ─── MAP TILES (OpenStreetMap) ────────────────────────────────────────────────
 const _tileCache = new Map(); // 'z/x/y' → { img, loaded }
-// Tile provider: CARTO Dark Matter (flat, minimal, dark style)
-const _TILE_URL = (z, x, y) => `https://basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`;
+// Tile provider: dinamico (dark o light in base al tema)
+const _TILE_URL = (z, x, y) =>
+  document.documentElement.classList.contains('day-mode')
+    ? `https://basemaps.cartocdn.com/light_all/${z}/${x}/${y}.png`
+    : `https://basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`;
 let _lastDrawMapArgs = null;
 let _lastLiveMapArgs = null;
 function _lonToTile(lon, z) { return Math.floor((lon + 180) / 360 * (1 << z)); }
@@ -2928,12 +3026,29 @@ _liveSec.addEventListener('touchend', () => {
   _livePanStart  = null;
 }, { passive: true });
 
-/* ── Service Worker (PWA offline) ── */
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+// ─── TEMA GIORNO / NOTTE ─────────────────────────────────────────────────────
+function toggleTheme() {
+  const isDay = document.documentElement.classList.toggle('day-mode');
+  const icon = isDay ? '🌙' : '☀️';
+  ['btnTheme', 'btnThemeUpload', 'btnThemeMobile'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = icon;
   });
+  localStorage.setItem('smp-theme', isDay ? 'day' : 'night');
+  _tileCache.clear();
+  if (_lastDrawMapArgs) drawMap(..._lastDrawMapArgs);
+  if (_lastLiveMapArgs) drawMap(..._lastLiveMapArgs);
 }
+// Applica tema salvato al caricamento
+(function() {
+  if (localStorage.getItem('smp-theme') === 'day') {
+    document.documentElement.classList.add('day-mode');
+    ['btnTheme', 'btnThemeUpload', 'btnThemeMobile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '🌙';
+    });
+  }
+})();
 </script>
 
 <!-- Auto-DJ floating notification -->
